@@ -1,0 +1,56 @@
+cabal-version:       2.2
+
+name:                efyu-lang
+version:             0.1.0.0
+license:             MIT
+license-file:        LICENSE
+author:              Akshay Nair
+maintainer:          phenax5@gmail.com
+build-type:          Simple
+
+common lib
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind
+  -- ghc-options: -Wall
+  build-depends:
+    parsec,
+    hspec,
+    containers,
+    random,
+    raw-strings-qq,
+    bytestring,
+    file-embed,
+    transformers,
+    base >=4.14 && <4.15
+  default-language: Haskell2010
+  default-extensions:
+    GADTs
+    , StandaloneDeriving
+    , ScopedTypeVariables
+    , RankNTypes
+    , QuantifiedConstraints
+    , TypeApplications
+    , TypeOperators
+    , MultiParamTypeClasses
+    , ConstraintKinds
+    , DataKinds
+    , PolyKinds
+    , KindSignatures
+    , FlexibleInstances
+    , FlexibleContexts
+    , QuasiQuotes
+
+Test-Suite test
+  import: lib
+  hs-source-dirs: tests
+  type: exitcode-stdio-1.0
+  main-is: _main.hs
+  default: false
+
+library library
+  import: lib
+  hs-source-dirs: src
+
+executable efyu
+  import: lib
+  hs-source-dirs: app
+  main-is: Main.hs
