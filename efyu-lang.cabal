@@ -9,11 +9,10 @@ maintainer:          phenax5@gmail.com
 build-type:          Simple
 
 common lib
-  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs
   -- ghc-options: -Wall
   build-depends:
     parsec,
-    hspec,
     containers,
     random,
     raw-strings-qq,
@@ -22,6 +21,7 @@ common lib
     transformers,
     base >=4.14 && <4.15
   default-language: Haskell2010
+  type: exitcode-stdio-1.0
   default-extensions:
     GADTs
     , StandaloneDeriving
@@ -41,16 +41,25 @@ common lib
 
 Test-Suite test
   import: lib
-  hs-source-dirs: tests
-  type: exitcode-stdio-1.0
+  hs-source-dirs:
+    src
+    tests
   main-is: _main.hs
+  type: exitcode-stdio-1.0
   default: false
+  build-depends:
+    hspec,
+    hspec-golden
 
 library library
   import: lib
   hs-source-dirs: src
+  exposed-modules:
+    Efyu
 
 executable efyu
   import: lib
-  hs-source-dirs: app
+  hs-source-dirs:
+    app
+    src
   main-is: Main.hs
