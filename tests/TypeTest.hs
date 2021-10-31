@@ -15,3 +15,12 @@ tests =
       infer (Literal $ LiteralBool True) `shouldReturn` Right (Map.empty, TBool)
     it "should infer lambda types" $ do
       infer (Lambda "x" (Literal $ LiteralFloat 0.0)) `shouldReturn` Right (Map.empty, TLambda (TVar "a0") TFloat)
+    it "should infer function application" $ do
+      infer (Apply (Lambda "x" (Literal $ LiteralInt 3)) (Literal $ LiteralFloat 0.0))
+        `shouldReturn` Right
+          ( Map.fromList
+              [ ("a0", TInt),
+                ("a1", TFloat)
+              ],
+            TInt
+          )
