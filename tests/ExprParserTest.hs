@@ -1,6 +1,7 @@
 module ExprParserTest where
 
 import Efyu.Syntax.Expression
+import Efyu.Syntax.Syntax
 import Test.Hspec
 import Text.Parsec (parse)
 import Text.RawString.QQ (r)

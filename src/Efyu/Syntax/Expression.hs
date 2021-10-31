@@ -1,24 +1,8 @@
 module Efyu.Syntax.Expression where
 
+import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
 import Text.Parsec
-
-data Literal
-  = LiteralString String
-  | LiteralInt Int
-  | LiteralFloat Float
-  | LiteralBool Bool
-  deriving (Show, Eq)
-
-type Identifier = String
-
-data Expression
-  = Literal Literal
-  | Let [(Identifier, Expression)] Expression
-  | Var String
-  | Apply Expression Expression
-  | Lambda Identifier Expression
-  deriving (Show, Eq)
 
 type EfyuParser u = Parsec String u
 

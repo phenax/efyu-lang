@@ -24,6 +24,7 @@ common lib
   type: exitcode-stdio-1.0
   default-extensions:
     GADTs
+    , LambdaCase
     , StandaloneDeriving
     , ScopedTypeVariables
     , RankNTypes
