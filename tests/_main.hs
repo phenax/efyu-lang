@@ -1,6 +1,6 @@
-import qualified EvalTest
+import qualified ExprParserTest
 import Test.Hspec
 
 main :: IO ()
 main = hspec $ do
-  EvalTest.tests
+  ExprParserTest.tests
