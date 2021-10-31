@@ -24,5 +24,21 @@ tests = do
       p [r|20.|] `shouldBe` Right (Literal (LiteralFloat 20.0))
       p [r|-20.05|] `shouldBe` Right (Literal (LiteralFloat (-20.05)))
       p [r|-20.|] `shouldBe` Right (Literal (LiteralFloat (-20.0)))
+  describe "let binding expression" $ do
+    it "should parse let bindings" $ do
+      p
+        [r|
+        let
+          x = 200.;
+          y = "wow";
+        in x
+      |]
+        `shouldBe` Right
+          ( Let
+              [ ("x", Literal $ LiteralFloat 200.0),
+                ("y", Literal $ LiteralString "wow")
+              ]
+              $ Var "x"
+          )
 
 --

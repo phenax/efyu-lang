@@ -13,4 +13,4 @@ withWhitespace comb = do
   whitespace
   content <- comb
   whitespace
-  return content
+  pure content

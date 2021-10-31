@@ -15,22 +15,26 @@ type Identifier = String
 data Expression
   = Literal Literal
   | Let [(Identifier, Expression)] Expression
-  | Apply Identifier [Expression]
+  | Var String
+  | Apply Expression Expression
+  | Lambda Identifier Expression
   deriving (Show, Eq)
 
-stringLitP :: Parsec String u Literal
+type EfyuParser u = Parsec String u
+
+stringLitP :: EfyuParser u Literal
 stringLitP = do
   char '"'
   LiteralString <$> anyChar `manyTill` char '"'
 
-intLitP :: Parsec String u Literal
+intLitP :: EfyuParser u Literal
 intLitP =
   LiteralInt . read <$> do
     sign <- option "" $ string "-"
     d <- many1 digit
     return $ sign ++ d
 
-floatLitP :: Parsec String u Literal
+floatLitP :: EfyuParser u Literal
 floatLitP =
   LiteralFloat . read <$> do
     sign <- option "" $ string "-"
@@ -40,12 +44,12 @@ floatLitP =
     let decimal = if dec == "" then "0" else dec
     pure $ sign ++ n ++ "." ++ decimal
 
-boolLitP :: Parsec String u Literal
+boolLitP :: EfyuParser u Literal
 boolLitP = LiteralBool . toBool <$> (string "True" <|> string "False")
   where
     toBool = (== "True")
 
-literalP :: Parsec String u Expression
+literalP :: EfyuParser u Expression
 literalP = Literal <$> literal
   where
     literal =
@@ -54,8 +58,31 @@ literalP = Literal <$> literal
         <|> intLitP
         <|> boolLitP
 
-expressionP :: Parsec String u Expression
-expressionP = literalP <?> "Syntax parsing error"
+identifier :: EfyuParser u String
+identifier = many1 alphaNum
 
-parseExpression :: Parsec String u Expression
+varP :: EfyuParser u Expression
+varP = withWhitespace (Var <$> identifier)
+
+definitionP :: EfyuParser u (String, Expression)
+definitionP = withWhitespace $ do
+  name <- identifier
+  whitespace
+  char '='
+  value <- expressionP
+  char ';'
+  pure (name, value)
+
+letBindingP :: EfyuParser u Expression
+letBindingP = withWhitespace $ do
+  string "let"
+  vars <- definitionP `manyTill` string "in"
+  Let vars <$> expressionP
+
+expressionP :: EfyuParser u Expression
+expressionP = withWhitespace p
+  where
+    p = literalP <|> letBindingP <|> varP <?> "Syntax parsing error"
+
+parseExpression :: EfyuParser u Expression
 parseExpression = withWhitespace expressionP
