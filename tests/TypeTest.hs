@@ -24,3 +24,8 @@ tests =
               ],
             TInt
           )
+    it "should error out for invalid variables" $ do
+      infer (Var "foobar") `shouldReturn` Left "Unbound variable foobar"
+      infer (Lambda "x" (Var "x1")) `shouldReturn` Left "Unbound variable x1"
+
+---

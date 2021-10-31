@@ -1,6 +1,5 @@
 module Efyu.Types.Types where
 
-import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
@@ -27,10 +26,8 @@ type TypeSubst = Map.Map String Type
 composeSubst :: TypeSubst -> TypeSubst -> TypeSubst
 composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1
 
--- forall (a, b). Int -> a -> b -> String -> b
---   [String] -> Polymorphic labels
---   Type -> Type signature consuming the polymorphic labels
-data TypeScheme = Scheme [String] Type
+-- Polymorphic set of vars
+data TypeScheme = TypeScheme [String] Type
 
 -- type definitions map (name -> scheme)
 type TypeEnv = Map.Map String TypeScheme
@@ -52,8 +49,8 @@ instance FreeTypeVar Type where
     t -> t
 
 instance FreeTypeVar TypeScheme where
-  freeTypeVars (Scheme vars t) = freeTypeVars t `Set.difference` Set.fromList vars
-  apply s (Scheme vars t) = Scheme vars (apply (foldr Map.delete s vars) t)
+  freeTypeVars (TypeScheme vars t) = freeTypeVars t `Set.difference` Set.fromList vars
+  apply s (TypeScheme vars t) = TypeScheme vars (apply (foldr Map.delete s vars) t)
 
 instance FreeTypeVar a => FreeTypeVar [a] where
   apply = map . apply
@@ -110,12 +107,18 @@ unify a b = case (a, b) of
       _ | Set.member n (freeTypeVars t) -> lift $ throwE "foobaroty"
       _ -> pure $ Map.singleton n t
 
+instantiate :: TypeScheme -> TI Type
+instantiate (TypeScheme vars t) = do
+  nvars <- mapM (\_ -> newTyVar "a") vars
+  let s = Map.fromList (zip vars nvars)
+  pure $ apply s t
+
 inferType :: TypeEnv -> Expression -> TI (TypeSubst, Type)
 inferType env = \case
   Literal lit -> pure (Map.empty, literalType lit)
   Lambda p r -> do
     tv <- newTyVar "a"
-    let env' = Map.insert p (Scheme [] tv) env
+    let env' = Map.insert p (TypeScheme [] tv) env
     (s1, t1) <- inferType env' r
     pure (s1, TLambda (apply s1 tv) t1)
   Apply fn param -> do
@@ -124,6 +127,12 @@ inferType env = \case
     (s2, t2) <- inferType (apply s1 env) param
     s3 <- unify (apply s2 t1) (TLambda t2 tv)
     pure (s3 `composeSubst` s2 `composeSubst` s1, apply s3 tv)
-  _ -> pure (Map.empty, TInt)
+  Var n ->
+    case Map.lookup n env of
+      Nothing -> lift . throwE $ "Unbound variable " ++ n
+      Just scheme -> do
+        t <- instantiate scheme
+        pure (Map.empty, t)
+  _ -> lift $ throwE "fuck off"
 
 -----------------

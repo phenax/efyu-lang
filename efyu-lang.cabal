@@ -9,7 +9,7 @@ maintainer:          phenax5@gmail.com
 build-type:          Simple
 
 common lib
-  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs -Wno-missing-home-modules
   -- ghc-options: -Wall
   build-depends:
     parsec,
