@@ -33,12 +33,15 @@ data TypeScheme = TypeScheme [String] Type
 type TypeEnv = Map.Map String TypeScheme
 
 class FreeTypeVar a where
+  -- | Get a set of all free type variables
   freeTypeVars :: a -> TypeVars
+
+  -- | Apply a substitution on a type and get a new type
   apply :: TypeSubst -> a -> a
 
 instance FreeTypeVar Type where
   freeTypeVars = \case
-    TVar n -> Set.singleton n
+    TVar name -> Set.singleton name
     TLambda p r -> Set.union (freeTypeVars p) (freeTypeVars r)
     _ -> Set.empty
   apply sub = \case
@@ -78,61 +81,82 @@ runTI t = do
     initTIState = TIState {tiSupply = 0, tiSubst = Map.empty}
     initTIEnv = TIEnv {}
 
-newTyVar :: Identifier -> TI Type
-newTyVar prefix = do
+-- | Create a new type variable
+newTypeVar :: Identifier -> TI Type
+newTypeVar prefix = do
   s <- get
   put (s {tiSupply = 1 + tiSupply s})
   pure . TVar $ prefix ++ show (tiSupply s)
 
-literalType :: Literal -> Type
-literalType = \case
+-- | Unify two types and return substitutions
+unify :: Type -> Type -> TI TypeSubst
+unify t t' = case (t, t') of
+  (ty, TVar name) -> bindTypeVar name ty
+  (TVar name, ty) -> bindTypeVar name ty
+  (ty, ty') | ty == ty' -> pure Map.empty
+  (TLambda p r, TLambda p' r') -> do
+    st <- unify p p'
+    st' <- unify (apply st r) (apply st r')
+    pure $ composeSubst st st'
+  (ty, ty') ->
+    lift . throwE $ "unable to unify types: " ++ show ty ++ " and " ++ show ty'
+  where
+    -- bind a type variable to a type
+    -- if it's the same type variable, no substitutions
+    -- if a var with the same name is found inside ty, throw error
+    -- else substitute name with ty
+    bindTypeVar :: Identifier -> Type -> TI TypeSubst
+    bindTypeVar name = \case
+      TVar n | n == name -> pure Map.empty
+      ty | Set.member name (freeTypeVars ty) -> lift $ throwE "foobaroty"
+      ty -> pure $ Map.singleton name ty
+
+-- | Replace all bound types with fresh polymorphic type vars
+instantiate :: TypeScheme -> TI Type
+instantiate (TypeScheme vars t) = do
+  vars' <- mapM (\_ -> newTypeVar "a") vars
+  let s = Map.fromList (zip vars vars')
+  pure $ apply s t
+
+-- | Generalize type over all free vars in type but not in type env
+generalize :: TypeEnv -> Type -> TypeScheme
+generalize env t = flip TypeScheme t . Set.toList $ freeTypes
+  where
+    freeTypes = Set.difference (freeTypeVars t) (freeTypeVars env)
+
+-- | Infer types of literals
+inferLiteralType :: Literal -> Type
+inferLiteralType = \case
   LiteralInt _ -> TInt
   LiteralString _ -> TString
   LiteralBool _ -> TBool
   LiteralFloat _ -> TFloat
 
-unify :: Type -> Type -> TI TypeSubst
-unify a b = case (a, b) of
-  (t, TVar n) -> varBind n t
-  (TVar n, t) -> varBind n t
-  (t, t') | t == t' -> pure Map.empty
-  (TLambda p r, TLambda p' r') -> do
-    st <- unify p p'
-    st' <- unify (apply st r) (apply st r')
-    pure $ composeSubst st st'
-  (t, t') -> lift . throwE $ "unable to unify types: " ++ show t ++ " and " ++ show t'
-  where
-    varBind n t = case t of
-      TVar n' | n' == n -> pure Map.empty
-      _ | Set.member n (freeTypeVars t) -> lift $ throwE "foobaroty"
-      _ -> pure $ Map.singleton n t
-
-instantiate :: TypeScheme -> TI Type
-instantiate (TypeScheme vars t) = do
-  nvars <- mapM (\_ -> newTyVar "a") vars
-  let s = Map.fromList (zip vars nvars)
-  pure $ apply s t
-
-inferType :: TypeEnv -> Expression -> TI (TypeSubst, Type)
-inferType env = \case
-  Literal lit -> pure (Map.empty, literalType lit)
-  Lambda p r -> do
-    tv <- newTyVar "a"
-    let env' = Map.insert p (TypeScheme [] tv) env
-    (s1, t1) <- inferType env' r
-    pure (s1, TLambda (apply s1 tv) t1)
-  Apply fn param -> do
-    tv <- newTyVar "a"
-    (s1, t1) <- inferType env fn
-    (s2, t2) <- inferType (apply s1 env) param
-    s3 <- unify (apply s2 t1) (TLambda t2 tv)
-    pure (s3 `composeSubst` s2 `composeSubst` s1, apply s3 tv)
-  Var n ->
-    case Map.lookup n env of
-      Nothing -> lift . throwE $ "Unbound variable " ++ n
+inferType' :: TypeEnv -> Expression -> TI (TypeSubst, Type)
+inferType' env = \case
+  Literal lit -> pure (Map.empty, inferLiteralType lit)
+  Lambda param body -> do
+    tv <- newTypeVar "a"
+    let env' = Map.insert param (TypeScheme [] tv) env
+    (bodySubst, bodyType) <- inferType' env' body
+    pure (bodySubst, TLambda (apply bodySubst tv) bodyType)
+  Apply lambda param -> do
+    typeVar <- newTypeVar "a"
+    (sl, tl) <- inferType' env lambda
+    (sp, tp) <- inferType' (apply sl env) param
+    sres <- unify (apply sp tl) (TLambda tp typeVar)
+    pure (sres `composeSubst` sp `composeSubst` sl, apply sres typeVar)
+  Var name ->
+    case Map.lookup name env of
+      Nothing -> lift . throwE $ "Unbound variable " ++ name
       Just scheme -> do
-        t <- instantiate scheme
-        pure (Map.empty, t)
-  _ -> lift $ throwE "fuck off"
+        ty <- instantiate scheme
+        pure (Map.empty, ty)
+  Let _bindings _body -> lift $ throwE "foobarity"
+
+inferType :: TypeEnv -> Expression -> TI Type
+inferType env expr = do
+  (subst, ty) <- inferType' env expr
+  pure $ apply subst ty
 
 -----------------
