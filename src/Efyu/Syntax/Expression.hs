@@ -42,7 +42,10 @@ literalP = Literal <$> literal
         <|> intLitP
         <|> boolLitP
 
-identifier :: EfyuParser u String
+-- TODO: Allow _-'?
+-- TODO: Prevent numeric as first character
+-- TODO: Reserved keywords
+identifier :: EfyuParser u Identifier
 identifier = many1 alphaNum
 
 varP :: EfyuParser u Expression
@@ -63,10 +66,24 @@ letBindingP = withWhitespace $ do
   vars <- definitionP `manyTill` string "in"
   Let vars <$> expressionP
 
+-- TODO: Use patterns instead of parsing identifier
+lambdaP :: EfyuParser u Expression
+lambdaP = withWhitespace $ do
+  char '\\'
+  var <- identifier
+  whitespace
+  string "->"
+  Lambda var <$> expressionP
+
+-- applyP :: EfyuParser u Expression
+-- applyP = withWhitespace $ do
+--   fn <- expressionP
+--   Apply fn <$> expressionP
+
 expressionP :: EfyuParser u Expression
-expressionP = withWhitespace p
+expressionP = withWhitespace . withParens $ p
   where
-    p = literalP <|> letBindingP <|> varP <?> "Syntax parsing error"
+    p = literalP <|> lambdaP <|> letBindingP <|> varP <?> "Syntax parsing error"
 
 parseExpression :: EfyuParser u Expression
 parseExpression = withWhitespace expressionP

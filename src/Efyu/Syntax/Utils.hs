@@ -9,8 +9,8 @@ commentString :: Parsec String u String
 commentString = whitespace >> string "//" >> anyChar `manyTill` newline
 
 withWhitespace :: Parsec String u a -> Parsec String u a
-withWhitespace comb = do
-  whitespace
-  content <- comb
-  whitespace
-  pure content
+withWhitespace = between whitespace whitespace
+
+withParens :: Parsec String u a -> Parsec String u a
+withParens comb =
+  between (char '(') (char ')') comb <|> comb
