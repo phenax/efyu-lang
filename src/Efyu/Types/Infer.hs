@@ -104,7 +104,7 @@ inferType' env = \case
     (stBody, tyBody) <- inferType' (apply stBinding env') body
     pure (stBinding `composeSubst` stBody, tyBody)
 
--- Resolve a set of bindings to a set of type substitutions and
+-- | Resolve a set of bindings to a set of type substitutions and
 resolveBindings :: TypeEnv -> [(Identifier, Expression)] -> TI (TypeSubst, TypeEnv)
 resolveBindings env = foldM getSubstEnv (Map.empty, env)
   where

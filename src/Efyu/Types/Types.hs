@@ -1,7 +1,9 @@
 module Efyu.Types.Types where
 
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
+import Efyu.Utils (mapDeleteKeys)
 
 data Type
   = TLambda Type Type
@@ -41,13 +43,8 @@ instance FreeTypeVar Type where
     _ -> Set.empty
   apply sub = \case
     TLambda p r -> TLambda (apply sub p) (apply sub r)
-    TVar n -> case Map.lookup n sub of
-      Just t -> t
-      Nothing -> TVar n
+    TVar n -> fromMaybe (TVar n) $ Map.lookup n sub
     t -> t
-
-mapDeleteKeys :: (Ord k) => [k] -> Map.Map k a -> Map.Map k a
-mapDeleteKeys keys map = foldr Map.delete map keys
 
 instance FreeTypeVar TypeScheme where
   freeTypeVars (TypeScheme vars t) = Set.difference (freeTypeVars t) (Set.fromList vars)
