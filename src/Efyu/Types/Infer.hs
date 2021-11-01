@@ -1,5 +1,6 @@
 module Efyu.Types.Infer where
 
+import Control.Monad (foldM)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
@@ -98,9 +99,20 @@ inferType' env = \case
       Just scheme -> do
         ty <- instantiate scheme
         pure (Map.empty, ty)
-  Let bindings body ->
-    --
-    lift $ throwE "foobarity"
+  Let bindings body -> do
+    (stBinding, env') <- resolveBindings env bindings
+    (stBody, tyBody) <- inferType' (apply stBinding env') body
+    pure (stBinding `composeSubst` stBody, tyBody)
+
+-- Resolve a set of bindings to a set of type substitutions and
+resolveBindings :: TypeEnv -> [(Identifier, Expression)] -> TI (TypeSubst, TypeEnv)
+resolveBindings env = foldM getSubstEnv (Map.empty, env)
+  where
+    getSubstEnv (st, env) (name, expr) = do
+      (stBinding, tyBinding) <- inferType' env expr
+      let ty' = generalize (apply stBinding env) tyBinding
+      let env' = Map.insert name ty' env
+      pure (Map.union st stBinding, env')
 
 inferType :: TypeEnv -> Expression -> TI Type
 inferType env expr = do
