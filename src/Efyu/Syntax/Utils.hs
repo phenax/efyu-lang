@@ -32,7 +32,7 @@ integer = int <|> L.signed sc int
   where
     int = read <$> some digitChar
 
-float :: MParser Float
+float :: MParser Double
 float = fl <|> L.signed sc fl
   where
     fl = do
@@ -45,4 +45,5 @@ indentBlock = L.indentBlock scnl
 insideQuotes :: MParser String
 insideQuotes = char '"' >> manyTill L.charLiteral (char '"')
 
+lineFold :: (MParser () -> MParser u) -> MParser u
 lineFold = L.lineFold scnl

@@ -35,13 +35,13 @@ definitionP = lexeme $ do
 
 letBindingP :: MParser Expression
 letBindingP = do
-  string "let"
+  symbol "let"
   scnl
   vars <- definitionP `someTill` symbol "in"
   scnl
   Let vars <$> expressionP
 
 expressionP :: MParser Expression
-expressionP = scnl >> p
+expressionP = scnl >> p <* scnl
   where
     p = letBindingP <|> literalP <|> varP <?> "Syntax parsing error"
