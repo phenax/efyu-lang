@@ -9,6 +9,7 @@ import Test.Hspec
 tests =
   describe "Type inference" $ do
     let infer = runTI . inferType Map.empty
+
     it "should infer literal types" $ do
       infer (Literal $ LiteralInt 20) `shouldReturn` Right TInt
       infer (Literal $ LiteralString "") `shouldReturn` Right TString

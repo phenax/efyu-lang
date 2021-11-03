@@ -164,6 +164,30 @@ tests = do
           `shouldParse` Apply (Apply (Var "add") (Apply (Var "foo") (Var "x"))) (Var "y")
         p [r| @(@add (@foo x)) y |]
           `shouldParse` Apply (Apply (Var "add") (Apply (Var "foo") (Var "x"))) (Var "y")
+      it "should allow different layouts" $ do
+        p
+          [r|
+          @add
+            x
+            y |]
+          `shouldParse` Apply (Apply (Var "add") (Var "x")) (Var "y")
+        p
+          [r|
+          @add
+            (@foo
+              x)
+            y |]
+          `shouldParse` Apply (Apply (Var "add") (Apply (Var "foo") (Var "x"))) (Var "y")
+        p
+          `shouldFailOn` [r|
+          @add
+          (@foo
+          x)
+          y |]
+        p
+          `shouldFailOn` [r|
+          @add (@foo
+          x) y |]
 
 --
 --
