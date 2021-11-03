@@ -10,6 +10,7 @@ import Text.RawString.QQ (r)
 
 tests = do
   let p = MP.parse (expressionP <* eof) "testfile.fu"
+
   describe "literal expression" $ do
     it "should parse literal string" $ do
       p [r|"hell"|] `shouldParse` Literal (LiteralString "hell")
@@ -27,26 +28,63 @@ tests = do
       p [r|-20.05|] `shouldParse` Literal (LiteralFloat (-20.05))
       p [r|-20.|] `shouldParse` Literal (LiteralFloat (-20.0))
 
-  describe "variables" $
-    do
-      it "should parse alphanumeric identifiers" $ do
-        p [r|foobar|] `shouldParse` Var "foobar"
-        p [r|foobar121|] `shouldParse` Var "foobar121"
-        p [r|foo'x|] `shouldParse` Var "foo'x"
-        p [r|foo?x|] `shouldParse` Var "foo?x"
-        p [r|foo_bar|] `shouldParse` Var "foo_bar"
-        p "\n  foo_bar " `shouldParse` Var "foo_bar"
-        p `shouldFailOn` "121foobar"
-        p `shouldFailOn` "''1foobar"
-        p `shouldFailOn` "$1foobar"
-        p `shouldFailOn` "\"1foobar"
+  describe "variables" $ do
+    it "should parse alphanumeric identifiers" $ do
+      p [r|foobar|] `shouldParse` Var "foobar"
+      p [r|foobar121|] `shouldParse` Var "foobar121"
+      p [r|foo'x|] `shouldParse` Var "foo'x"
+      p [r|foo?x|] `shouldParse` Var "foo?x"
+      p [r|foo_bar|] `shouldParse` Var "foo_bar"
+      p "\n  foo_bar " `shouldParse` Var "foo_bar"
+      p `shouldFailOn` "121foobar"
+      p `shouldFailOn` "''1foobar"
+      p `shouldFailOn` "?foobar"
+      p `shouldFailOn` "$1foobar"
+      p `shouldFailOn` "\"1foobar"
 
   describe "let binding expression" $ do
-    it "should parse let bindings" $ do
+    it "should parse simple let binding" $ do
+      p [r| let x = 200. in x |]
+        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+      p [r| let x = let y = 200.0 in y; in x |]
+        `shouldParse` Let
+          [ ( "x",
+              Let
+                [("y", Literal $ LiteralFloat 200.0)]
+                (Var "y")
+            )
+          ]
+          (Var "x")
+    it "should parse different layouts of writing let bindings with indents" $ do
+      p
+        [r| let x = 200. in x |]
+        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+      p
+        [r|
+          let x = 200. in
+            x |]
+        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+      p
+        [r| let
+            x = 200.
+          in x |]
+        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+      p
+        [r|
+          let x = 200.
+          in x
+        |]
+        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+      p [r| let x = 200.; y = "wow"; in x|]
+        `shouldParse` Let
+          [ ("x", Literal $ LiteralFloat 200.0),
+            ("y", Literal $ LiteralString "wow")
+          ]
+          (Var "x")
       p
         [r|
           let
-            x = 200.;
+            x = 200.
             y = "wow";
           in x|]
         `shouldParse` Let
@@ -54,6 +92,28 @@ tests = do
             ("y", Literal $ LiteralString "wow")
           ]
           (Var "x")
+      p
+        [r|
+          let
+            x =
+              200.
+            y =
+              "wow"
+          in x|]
+        `shouldParse` Let
+          [ ("x", Literal $ LiteralFloat 200.0),
+            ("y", Literal $ LiteralString "wow")
+          ]
+          (Var "x")
+      p
+        `shouldFailOn` [r|
+          let
+          x = 200.;
+          in x |]
+      p
+        `shouldFailOn` [r|
+          let x = 200.; in
+          x |]
 
 -- describe "lambda expression" $ do
 --   it "should parse simple lambda" $ do

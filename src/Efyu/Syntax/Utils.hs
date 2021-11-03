@@ -40,10 +40,8 @@ float = fl <|> L.signed sc fl
       dec <- fromMaybe "0" <$> optional (some digitChar)
       pure . read $ n ++ "." ++ dec
 
-indentBlock = L.indentBlock scnl
-
 insideQuotes :: MParser String
 insideQuotes = char '"' >> manyTill L.charLiteral (char '"')
 
-lineFold :: (MParser () -> MParser u) -> MParser u
-lineFold = L.lineFold scnl
+withLineFold :: (MParser () -> MParser u) -> MParser u
+withLineFold = L.lineFold scnl
