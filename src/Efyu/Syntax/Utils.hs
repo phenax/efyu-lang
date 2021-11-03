@@ -7,9 +7,9 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
--- withOptionalParens :: EfyuParser u a -> EfyuParser u a
--- withOptionalParens comb =
---   between (char '(') (char ')') comb <|> comb
+withOptionalParens :: MParser a -> MParser a
+withOptionalParens comb =
+  between (char '(') (char ')') (lexeme comb) <|> comb
 
 type MParser = Parsec Void String
 

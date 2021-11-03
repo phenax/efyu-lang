@@ -135,7 +135,7 @@ tests = do
         p [r|\x -> x|] `shouldParse` Lambda "x" (Var "x")
         p [r| \x -> 200 |] `shouldParse` Lambda "x" (Literal . LiteralInt $ 200)
         p [r| \x -> "wow" |] `shouldParse` Lambda "x" (Literal . LiteralString $ "wow")
-      it "should parse lambda" $ do
+      it "should parse nested lambdas" $ do
         p [r| \x -> \foobar -> @add x foobar |]
           `shouldParse` Lambda
             "x"
@@ -146,3 +146,29 @@ tests = do
                     (Var "foobar")
                 )
             )
+
+    describe "apply expression" $ do
+      it "should parse simple application" $ do
+        p [r|@add 2|] `shouldParse` Apply (Var "add") (Literal . LiteralInt $ 2)
+        p [r| @add x 2.1 |] `shouldParse` Apply (Apply (Var "add") (Var "x")) (Literal . LiteralFloat $ 2.1)
+        p
+          [r|
+          @add
+            2
+            2.1 |]
+          `shouldParse` Apply (Apply (Var "add") (Literal . LiteralInt $ 2)) (Literal . LiteralFloat $ 2.1)
+      it "should parse apply for lambda expression" $ do
+        p [r| @(\x -> x) y |] `shouldParse` Apply (Lambda "x" (Var "x")) (Var "y")
+      it "should parse nested application" $ do
+        p [r| @add (@foo x) y |]
+          `shouldParse` Apply (Apply (Var "add") (Apply (Var "foo") (Var "x"))) (Var "y")
+        p [r| @(@add (@foo x)) y |]
+          `shouldParse` Apply (Apply (Var "add") (Apply (Var "foo") (Var "x"))) (Var "y")
+
+--
+--
+--
+--
+--
+--
+--

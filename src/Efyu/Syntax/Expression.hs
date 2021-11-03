@@ -62,12 +62,11 @@ applyP = withLineFold $ \sp -> do
   char '@'
   fn <- L.lexeme sp expressionP
   sp
-  head : tail <- some $ L.lexeme sp expressionP
-  -- Apply fn <$> L.lexeme sp expressionP
-  pure $ foldl' Apply (Apply fn head) tail
+  params <- some $ L.lexeme sp expressionP
+  pure $ foldl' Apply fn params
 
 expressionP :: MParser Expression
-expressionP = scnl >> p <* scnl
+expressionP = scnl >> withOptionalParens p <* scnl
   where
     p = letBindingP <|> lambdaP <|> literalP <|> try applyP <|> varP <?> "Syntax parsing error"
 
