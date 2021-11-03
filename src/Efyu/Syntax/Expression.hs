@@ -4,8 +4,6 @@ import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
 import Text.Parsec
 
-type EfyuParser u = Parsec String u
-
 stringLitP :: EfyuParser u Literal
 stringLitP = do
   char '"'
@@ -81,7 +79,7 @@ lambdaP = withWhitespace $ do
 --   Apply fn <$> expressionP
 
 expressionP :: EfyuParser u Expression
-expressionP = withWhitespace . withParens $ p
+expressionP = withWhitespace . withOptionalParens $ p
   where
     p = literalP <|> lambdaP <|> letBindingP <|> varP <?> "Syntax parsing error"
 

@@ -13,6 +13,7 @@ common lib
   -- ghc-options: -Wall
   build-depends:
     parsec,
+    megaparsec,
     containers,
     random,
     raw-strings-qq,
@@ -39,6 +40,7 @@ common lib
     , FlexibleInstances
     , FlexibleContexts
     , QuasiQuotes
+    , TupleSections
 
 Test-Suite test
   import: lib
