@@ -1,5 +1,7 @@
 module Efyu.Syntax.Expression where
 
+import Control.Monad (foldM)
+import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
@@ -47,7 +49,29 @@ letBindingP = withLineFold $ \sp -> do
   vars <- definitionP `someTill` L.symbol sp "in"
   Let vars <$> expressionP
 
+lambdaP :: MParser Expression
+lambdaP = withLineFold $ \sp -> do
+  char '\\'
+  var <- identifier
+  sp
+  string "->"
+  Lambda var <$> L.lexeme sp expressionP
+
+applyP :: MParser Expression
+applyP = withLineFold $ \sp -> do
+  char '@'
+  fn <- L.lexeme sp expressionP
+  sp
+  head : tail <- some $ L.lexeme sp expressionP
+  -- Apply fn <$> L.lexeme sp expressionP
+  pure $ foldl' Apply (Apply fn head) tail
+
 expressionP :: MParser Expression
 expressionP = scnl >> p <* scnl
   where
-    p = letBindingP <|> literalP <|> varP <?> "Syntax parsing error"
+    p = letBindingP <|> lambdaP <|> literalP <|> try applyP <|> varP <?> "Syntax parsing error"
+
+--
+--
+--
+--

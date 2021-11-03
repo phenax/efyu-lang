@@ -46,7 +46,22 @@ tests = do
     it "should parse simple let binding" $ do
       p [r| let x = 200. in x |]
         `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+    it "should parse nested let binding" $ do
       p [r| let x = let y = 200.0 in y; in x |]
+        `shouldParse` Let
+          [ ( "x",
+              Let
+                [("y", Literal $ LiteralFloat 200.0)]
+                (Var "y")
+            )
+          ]
+          (Var "x")
+      p -- TODO: This is incorrect behavior fix later
+        [r|
+        let x =
+              let y = 200.0
+            in y;
+          in x |]
         `shouldParse` Let
           [ ( "x",
               Let
@@ -115,24 +130,19 @@ tests = do
           let x = 200.; in
           x |]
 
--- describe "lambda expression" $ do
---   it "should parse simple lambda" $ do
---     p [r|\x -> x|] `shouldParse`  (Lambda "x" (Var "x"))
-
---   -- p [r| \x -> 200 |] `shouldParse`  (Lambda "x" (Literal . LiteralInt $ 200))
---   -- p [r| \x -> "wow" |] `shouldParse`  (Lambda "x" (Literal . LiteralString $ "wow"))
---   xit "should parse lambda" $ do
---     p [r| \x -> \foobar -> add x foobar |]
---       `shouldParse`
---         ( Lambda
---             "x"
---             ( Lambda
---                 "foobar"
---                 ( Apply
---                     (Apply (Var "add") (Var "x"))
---                     (Var "y")
---                 )
---             )
---         )
-
---
+    describe "lambda expression" $ do
+      it "should parse simple lambda" $ do
+        p [r|\x -> x|] `shouldParse` Lambda "x" (Var "x")
+        p [r| \x -> 200 |] `shouldParse` Lambda "x" (Literal . LiteralInt $ 200)
+        p [r| \x -> "wow" |] `shouldParse` Lambda "x" (Literal . LiteralString $ "wow")
+      it "should parse lambda" $ do
+        p [r| \x -> \foobar -> @add x foobar |]
+          `shouldParse` Lambda
+            "x"
+            ( Lambda
+                "foobar"
+                ( Apply
+                    (Apply (Var "add") (Var "x"))
+                    (Var "foobar")
+                )
+            )
