@@ -12,8 +12,8 @@ common lib
   ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs -Wno-missing-home-modules
   -- ghc-options: -Wall
   build-depends:
-    parsec,
     megaparsec,
+    hspec-megaparsec,
     containers,
     random,
     raw-strings-qq,

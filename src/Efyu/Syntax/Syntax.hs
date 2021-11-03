@@ -2,7 +2,7 @@ module Efyu.Syntax.Syntax where
 
 data Literal
   = LiteralString String
-  | LiteralInt Int
+  | LiteralInt Integer
   | LiteralFloat Float
   | LiteralBool Bool
   deriving (Show, Eq)

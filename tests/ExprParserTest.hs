@@ -1,59 +1,45 @@
 module ExprParserTest where
 
-import Data.List (intercalate)
-import Efyu.Syntax.Expr (exprParser)
 import Efyu.Syntax.Expression
 import Efyu.Syntax.Syntax
 import Test.Hspec
+import Test.Hspec.Megaparsec
+import Text.Megaparsec (MonadParsec (eof))
 import qualified Text.Megaparsec as MP
-import Text.Parsec (parse)
 import Text.RawString.QQ (r)
 
 tests = do
-  let p = parse parseExpression "Expr"
-  let pp = MP.parse exprParser "wow"
-
-  describe "wow" $ do
-    fit "foobar" $ do
-      pp
-        ( intercalate
-            "\n"
-            [ "",
-              "foobar",
-              "  wow",
-              "    nnice",
-              "      cool",
-              "    1nnice1",
-              "      1cool1",
-              "  cooltl",
-              "  gogogoo",
-              ""
-            ]
-        )
-        `shouldBe` Right ("", [])
-
+  let p = MP.parse (expressionP <* eof) "testfile.fu"
   describe "literal expression" $ do
     it "should parse literal string" $ do
-      p [r|"hell"|] `shouldBe` Right (Literal (LiteralString "hell"))
-      p [r|"121lk~!@#$%^&*()_+-=`[]\\;',./"|] `shouldBe` Right (Literal (LiteralString "121lk~!@#$%^&*()_+-=`[]\\\\;',./"))
+      p [r|"hell"|] `shouldParse` Literal (LiteralString "hell")
+      p [r|"121lk~!@#$%^&*()_+-=`[]\\;',./"|] `shouldParse` Literal (LiteralString "121lk~!@#$%^&*()_+-=`[]\\;',./")
     it "should parse literal int" $ do
-      p [r|2005|] `shouldBe` Right (Literal (LiteralInt 2005))
-      p [r|0|] `shouldBe` Right (Literal (LiteralInt 0))
-      p [r|-2005|] `shouldBe` Right (Literal (LiteralInt (-2005)))
+      p [r|2005|] `shouldParse` Literal (LiteralInt 2005)
+      p [r|0|] `shouldParse` Literal (LiteralInt 0)
+      p [r|-2005|] `shouldParse` Literal (LiteralInt (-2005))
     it "should parse literal bool" $ do
-      p [r|True|] `shouldBe` Right (Literal (LiteralBool True))
-      p [r|False|] `shouldBe` Right (Literal (LiteralBool False))
+      p [r|True|] `shouldParse` Literal (LiteralBool True)
+      p [r|False|] `shouldParse` Literal (LiteralBool False)
     it "should parse literal float" $ do
-      p [r|20.05|] `shouldBe` Right (Literal (LiteralFloat 20.05))
-      p [r|20.|] `shouldBe` Right (Literal (LiteralFloat 20.0))
-      p [r|-20.05|] `shouldBe` Right (Literal (LiteralFloat (-20.05)))
-      p [r|-20.|] `shouldBe` Right (Literal (LiteralFloat (-20.0)))
+      p [r|20.05|] `shouldParse` Literal (LiteralFloat 20.05)
+      p [r|20.|] `shouldParse` Literal (LiteralFloat 20.0)
+      p [r|-20.05|] `shouldParse` Literal (LiteralFloat (-20.05))
+      p [r|-20.|] `shouldParse` Literal (LiteralFloat (-20.0))
 
-  describe "variables" $ do
-    it "should parse alphanumeric identifiers" $ do
-      p [r|foobar|] `shouldBe` Right (Var "foobar")
-      p [r|foobar121|] `shouldBe` Right (Var "foobar121")
-  -- p [r|121foobar|] `shouldBe` Right (Var "x") -- TODO: should error out
+  describe "variables" $
+    do
+      it "should parse alphanumeric identifiers" $ do
+        p [r|foobar|] `shouldParse` Var "foobar"
+        p [r|foobar121|] `shouldParse` Var "foobar121"
+        p [r|foo'x|] `shouldParse` Var "foo'x"
+        p [r|foo?x|] `shouldParse` Var "foo?x"
+        p [r|foo_bar|] `shouldParse` Var "foo_bar"
+        p "\n  foo_bar " `shouldParse` Var "foo_bar"
+        p `shouldFailOn` "121foobar"
+        p `shouldFailOn` "''1foobar"
+        p `shouldFailOn` "$1foobar"
+        p `shouldFailOn` "\"1foobar"
 
   describe "let binding expression" $ do
     it "should parse let bindings" $ do
@@ -63,32 +49,30 @@ tests = do
             x = 200.;
             y = "wow";
           in x|]
-        `shouldBe` Right
-          ( Let
-              [ ("x", Literal $ LiteralFloat 200.0),
-                ("y", Literal $ LiteralString "wow")
-              ]
-              $ Var "x"
-          )
+        `shouldParse` Let
+          [ ("x", Literal $ LiteralFloat 200.0),
+            ("y", Literal $ LiteralString "wow")
+          ]
+          (Var "x")
 
-  describe "lambda expression" $ do
-    it "should parse simple lambda" $ do
-      p [r|\x -> x|] `shouldBe` Right (Lambda "x" (Var "x"))
+-- describe "lambda expression" $ do
+--   it "should parse simple lambda" $ do
+--     p [r|\x -> x|] `shouldParse`  (Lambda "x" (Var "x"))
 
-    -- p [r| \x -> 200 |] `shouldBe` Right (Lambda "x" (Literal . LiteralInt $ 200))
-    -- p [r| \x -> "wow" |] `shouldBe` Right (Lambda "x" (Literal . LiteralString $ "wow"))
-    xit "should parse lambda" $ do
-      p [r| \x -> \foobar -> add x foobar |]
-        `shouldBe` Right
-          ( Lambda
-              "x"
-              ( Lambda
-                  "foobar"
-                  ( Apply
-                      (Apply (Var "add") (Var "x"))
-                      (Var "y")
-                  )
-              )
-          )
+--   -- p [r| \x -> 200 |] `shouldParse`  (Lambda "x" (Literal . LiteralInt $ 200))
+--   -- p [r| \x -> "wow" |] `shouldParse`  (Lambda "x" (Literal . LiteralString $ "wow"))
+--   xit "should parse lambda" $ do
+--     p [r| \x -> \foobar -> add x foobar |]
+--       `shouldParse`
+--         ( Lambda
+--             "x"
+--             ( Lambda
+--                 "foobar"
+--                 ( Apply
+--                     (Apply (Var "add") (Var "x"))
+--                     (Var "y")
+--                 )
+--             )
+--         )
 
 --

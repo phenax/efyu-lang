@@ -2,86 +2,46 @@ module Efyu.Syntax.Expression where
 
 import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
-import Text.Parsec
+import Text.Megaparsec
+import Text.Megaparsec.Char
 
-stringLitP :: EfyuParser u Literal
-stringLitP = do
-  char '"'
-  LiteralString <$> anyChar `manyTill` char '"'
-
-intLitP :: EfyuParser u Literal
-intLitP =
-  LiteralInt . read <$> do
-    sign <- option "" $ string "-"
-    d <- many1 digit
-    return $ sign ++ d
-
-floatLitP :: EfyuParser u Literal
-floatLitP =
-  LiteralFloat . read <$> do
-    sign <- option "" $ string "-"
-    n <- many1 digit
-    char '.'
-    dec <- many digit
-    let decimal = if dec == "" then "0" else dec
-    pure $ sign ++ n ++ "." ++ decimal
-
-boolLitP :: EfyuParser u Literal
-boolLitP = LiteralBool . toBool <$> (string "True" <|> string "False")
+literalP :: MParser Expression
+literalP = Literal <$> p
   where
-    toBool = (== "True")
+    p = try floatP <|> intP <|> stringP <|> boolP
+    floatP = LiteralFloat <$> float
+    intP = LiteralInt <$> integer
+    stringP = LiteralString <$> insideQuotes
+    boolP = LiteralBool . (== "True") <$> (symbol "True" <|> symbol "False")
 
-literalP :: EfyuParser u Expression
-literalP = Literal <$> literal
-  where
-    literal =
-      stringLitP
-        <|> try floatLitP
-        <|> intLitP
-        <|> boolLitP
+identifier :: MParser String
+identifier = lexeme $ do
+  f <- letterChar
+  rest <- many (alphaNumChar <|> oneOf "_'?")
+  pure $ f : rest
 
--- TODO: Allow _-'?
--- TODO: Prevent numeric as first character
--- TODO: Reserved keywords
-identifier :: EfyuParser u Identifier
-identifier = many1 alphaNum
+varP :: MParser Expression
+varP = Var <$> identifier
 
-varP :: EfyuParser u Expression
-varP = withWhitespace (Var <$> identifier)
-
-definitionP :: EfyuParser u (String, Expression)
-definitionP = withWhitespace $ do
+definitionP :: MParser (String, Expression)
+definitionP = lexeme $ do
   name <- identifier
-  whitespace
   char '='
   value <- expressionP
+  scnl
   char ';'
+  scnl
   pure (name, value)
 
-letBindingP :: EfyuParser u Expression
-letBindingP = withWhitespace $ do
+letBindingP :: MParser Expression
+letBindingP = do
   string "let"
-  vars <- definitionP `manyTill` string "in"
+  scnl
+  vars <- definitionP `someTill` symbol "in"
+  scnl
   Let vars <$> expressionP
 
--- TODO: Use patterns instead of parsing identifier
-lambdaP :: EfyuParser u Expression
-lambdaP = withWhitespace $ do
-  char '\\'
-  var <- identifier
-  whitespace
-  string "->"
-  Lambda var <$> expressionP
-
--- applyP :: EfyuParser u Expression
--- applyP = withWhitespace $ do
---   fn <- expressionP
---   Apply fn <$> expressionP
-
-expressionP :: EfyuParser u Expression
-expressionP = withWhitespace . withOptionalParens $ p
+expressionP :: MParser Expression
+expressionP = scnl >> p
   where
-    p = literalP <|> lambdaP <|> letBindingP <|> varP <?> "Syntax parsing error"
-
-parseExpression :: EfyuParser u Expression
-parseExpression = withWhitespace expressionP
+    p = letBindingP <|> literalP <|> varP <?> "Syntax parsing error"
