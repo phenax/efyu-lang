@@ -15,11 +15,11 @@ tests = do
   describe "define block statement" $ do
     it "should parse definitions into a main module" $ do
       parse [r|num = 20|]
-        `shouldParse` Module "Main" [Def "num" (Literal $ LiteralInt 20)]
+        `shouldParse` Module "Main" [Def "num" (int 20)]
       parse
         [r|
 num = 20 |]
-        `shouldParse` Module "Main" [Def "num" (Literal $ LiteralInt 20)]
+        `shouldParse` Module "Main" [Def "num" (int 20)]
       parse
         `shouldFailOn` [r|
 num =
@@ -30,7 +30,7 @@ num =
   let
     x = 2
   in x |]
-        `shouldParse` Module "Main" [Def "num" (Let [("x", Literal $ LiteralInt 2)] (Var "x"))]
+        `shouldParse` Module "Main" [Def "num" (Let [("x", int 2)] (Var "x"))]
       parse
         `shouldFailOn` [r|
                  num = 20 |]
@@ -42,8 +42,8 @@ str = "ww"
 fn a b c = @stuff b c a |]
         `shouldParse` Module
           "Main"
-          [ Def "num" (Literal (LiteralInt 20)),
-            Def "str" (Literal (LiteralString "ww")),
+          [ Def "num" (int 20),
+            Def "str" (str "ww"),
             Def "fn" $ "a" *->> "b" *->> "c" *->> Var "stuff" `call` Var "b" `call` Var "c" `call` Var "a"
           ]
     it "should parse different styles for definitions" $ do
@@ -63,8 +63,8 @@ fn a b =
 dummy = 2|]
         `shouldParse` Module
           "Main"
-          [ Def "num" (Literal (LiteralInt 20)),
-            Def "str" (Literal (LiteralString "ww")),
+          [ Def "num" (int 20),
+            Def "str" (str "ww"),
             Def "fn" $ "a" *->> "b" *->> Var "stuff" `call` Var "a" `call` Var "b",
-            Def "dummy" (Literal $ LiteralInt 2)
+            Def "dummy" (int 2)
           ]

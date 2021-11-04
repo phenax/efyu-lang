@@ -46,13 +46,13 @@ tests = do
   describe "let binding expression" $ do
     it "should parse simple let binding" $ do
       p [r| let x = 200. in x |]
-        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+        `shouldParse` Let [("x", float 200.0)] (Var "x")
     it "should parse nested let binding" $ do
       p [r| let x = let y = 200.0 in y; in x |]
         `shouldParse` Let
           [ ( "x",
               Let
-                [("y", Literal $ LiteralFloat 200.0)]
+                [("y", float 200.0)]
                 (Var "y")
             )
           ]
@@ -66,7 +66,7 @@ tests = do
         `shouldParse` Let
           [ ( "x",
               Let
-                [("y", Literal $ LiteralFloat 200.0)]
+                [("y", float 200.0)]
                 (Var "y")
             )
           ]
@@ -74,17 +74,17 @@ tests = do
     it "should parse different layouts of writing let bindings with indents" $ do
       p
         [r| let x = 200. in x |]
-        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+        `shouldParse` Let [("x", float 200.0)] (Var "x")
       p
         [r|
           let x = 200. in
             x |]
-        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+        `shouldParse` Let [("x", float 200.0)] (Var "x")
       p
         [r| let
             x = 200.
           in x |]
-        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+        `shouldParse` Let [("x", float 200.0)] (Var "x")
       p
         [r|
           let x = 200.
@@ -93,8 +93,8 @@ tests = do
         `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
       p [r| let x = 200.; y = "wow"; in x|]
         `shouldParse` Let
-          [ ("x", Literal $ LiteralFloat 200.0),
-            ("y", Literal $ LiteralString "wow")
+          [ ("x", float 200.0),
+            ("y", str "wow")
           ]
           (Var "x")
       p
@@ -104,8 +104,8 @@ tests = do
             y = "wow";
           in x|]
         `shouldParse` Let
-          [ ("x", Literal $ LiteralFloat 200.0),
-            ("y", Literal $ LiteralString "wow")
+          [ ("x", float 200.0),
+            ("y", str "wow")
           ]
           (Var "x")
       p
@@ -117,8 +117,8 @@ tests = do
               "wow"
           in x|]
         `shouldParse` Let
-          [ ("x", Literal $ LiteralFloat 200.0),
-            ("y", Literal $ LiteralString "wow")
+          [ ("x", float 200.0),
+            ("y", str "wow")
           ]
           (Var "x")
       p
@@ -130,8 +130,8 @@ tests = do
               "wow"
           in x|]
         `shouldParse` Let
-          [ ("x", Var "add" `call` Literal (LiteralInt 1) `call` Literal (LiteralInt 2)),
-            ("y", Literal $ LiteralString "wow")
+          [ ("x", Var "add" `call` int 1 `call` int 2),
+            ("y", str "wow")
           ]
           (Var "x")
       p
@@ -147,8 +147,8 @@ tests = do
     describe "lambda expression" $ do
       it "should parse simple lambda" $ do
         p [r|\x -> x|] `shouldParse` ("x" *->> Var "x")
-        p [r| \x -> 200 |] `shouldParse` ("x" *->> Literal (LiteralInt 200))
-        p [r| \x -> "wow" |] `shouldParse` ("x" *->> Literal (LiteralString "wow"))
+        p [r| \x -> 200 |] `shouldParse` ("x" *->> int 200)
+        p [r| \x -> "wow" |] `shouldParse` ("x" *->> str "wow")
       it "should parse nested lambdas" $ do
         p [r| \x -> \foobar -> @add x foobar |]
           `shouldParse` ( "x" *->> "foobar"
@@ -157,14 +157,14 @@ tests = do
 
     describe "apply expression" $ do
       it "should parse simple application" $ do
-        p [r|@add 2|] `shouldParse` (Var "add" `call` Literal (LiteralInt 2))
-        p [r| @add x 2.1 |] `shouldParse` (Var "add" `call` Var "x" `call` Literal (LiteralFloat 2.1))
+        p [r|@add 2|] `shouldParse` (Var "add" `call` int 2)
+        p [r| @add x 2.1 |] `shouldParse` (Var "add" `call` Var "x" `call` float 2.1)
         p
           [r|
           @add
             2
             2.1 |]
-          `shouldParse` (Var "add" `call` Literal (LiteralInt 2) `call` Literal (LiteralFloat 2.1))
+          `shouldParse` (Var "add" `call` int 2 `call` float 2.1)
       it "should parse apply for lambda expression" $ do
         p [r| @(\x -> x) y |] `shouldParse` (("x" *->> Var "x") `call` Var "y")
       it "should parse nested application" $ do
