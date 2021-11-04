@@ -45,3 +45,6 @@ insideQuotes = char '"' >> manyTill L.charLiteral (char '"')
 
 withLineFold :: (MParser () -> MParser u) -> MParser u
 withLineFold = L.lineFold scnl
+
+nonIndented :: MParser a -> MParser a
+nonIndented = L.nonIndented scnl

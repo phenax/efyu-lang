@@ -1,12 +1,14 @@
 # TODO
   - [X] Allow single parenthesis around expressions
   - [X] Lambda parser
-  - [ ] Use megaparsec?
-  - [ ] Manage indents
-  - [ ] Function application parser
+  - [X] Use megaparsec?
+  - [X] Manage indents
+  - [X] Function application parser
   - [ ] Module parser
+  - [ ] Replace char, string, etc parsers with lexer helpers
+  - [ ] Function application parser (without @)
   - [ ] Test with https://hackage.haskell.org/package/hspec-megaparsec-2.2.0/docs/Test-Hspec-Megaparsec.html
-  - [ ] Use TextOverloaded
+  - [ ] Use Text
 
 ## Pattern matching
   - [ ] Patterns parsing

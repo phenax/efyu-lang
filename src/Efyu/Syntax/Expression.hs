@@ -1,6 +1,5 @@
 module Efyu.Syntax.Expression where
 
-import Control.Monad (foldM)
 import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import Efyu.Syntax.Syntax
@@ -22,7 +21,7 @@ reservedKeywords :: [String]
 reservedKeywords = ["let", "in"]
 
 identifier :: MParser String
-identifier = lexeme $ do
+identifier = do
   f <- letterChar
   rest <- many (alphaNumChar <|> oneOf "_'?")
   let name = f : rest
@@ -30,12 +29,15 @@ identifier = lexeme $ do
     then unexpected $ Label (f :| rest)
     else pure name
 
+parameter :: MParser String
+parameter = lexeme identifier
+
 varP :: MParser Expression
-varP = Var <$> identifier
+varP = Var <$> lexeme identifier
 
 definitionP :: MParser (String, Expression)
 definitionP = withLineFold $ \sp -> do
-  name <- identifier
+  name <- lexeme identifier
   char '='
   sp
   value <- expressionP
@@ -52,7 +54,7 @@ letBindingP = withLineFold $ \sp -> do
 lambdaP :: MParser Expression
 lambdaP = withLineFold $ \sp -> do
   char '\\'
-  var <- identifier
+  var <- lexeme identifier
   sp
   string "->"
   Lambda var <$> L.lexeme sp expressionP

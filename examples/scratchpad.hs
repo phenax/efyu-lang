@@ -1,15 +1,11 @@
 module Scratchpad where
 
--- ||||||||||||
-add5 : Int -> Int
-add5 = add 5;
 
--- ||||||||||||
-add5 = add 5;
+-- |||||||||||| Nested modules
 
-
--- ||||||||||||
-
+module Test where
+  gam = 200
+  add5 = add 5
 
 -- |||||||||||| pattern matching + recursion
 fibo : Int -> Int
