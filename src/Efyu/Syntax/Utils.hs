@@ -25,6 +25,7 @@ type MParser = Parsec Void String
 lexeme :: MParser a -> MParser a
 lexeme = L.lexeme sc
 
+symbol :: String -> MParser String
 symbol = L.symbol sc
 
 integer :: MParser Integer

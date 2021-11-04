@@ -1,35 +1,35 @@
 module Efyu.Syntax.Block where
 
-import Data.List (foldl')
 import Efyu.Syntax.Expression
 import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
+
+-- import qualified Text.Megaparsec.Char.Lexer as L
 
 data Block
   = Module String [Block]
   | Def Identifier Expression
   deriving (Show, Eq)
 
--- TODO: Write tests
+-- TODO: Allow patterns
 -- TODO: Re-use defineFnP in let bindings
 defineFnP :: MParser Block
 defineFnP = withLineFold $ \sp -> do
   name <- identifier
-  params <- many (L.lexeme sp parameter)
   sp
-  char '='
-  body <- L.lexeme sp expressionP
+  params <- (parameter <* sc) `manyTill` (sp >> char '=')
+  sp
+  -- char '='
+  body <- sp >> expressionP
   optional (char ';')
-  let func = foldl' (flip Lambda) body params
+  let func = foldr Lambda body params
   pure $ Def name func
 
 definitionListP :: (MParser Block -> MParser Block) -> MParser [Block]
-definitionListP pre = defP
+definitionListP pre = (pre p `sepBy` many newline) <* scnl
   where
-    defP = pre p `sepBy` many newline
     p = defineFnP
 
 -- moduleP :: MParser Block

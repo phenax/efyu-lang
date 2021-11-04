@@ -4,6 +4,7 @@ import Efyu.Syntax.Block
 import Efyu.Syntax.Syntax
 import Test.Hspec
 import Test.Hspec.Megaparsec
+import TestHelpers
 import Text.Megaparsec (MonadParsec (eof))
 import qualified Text.Megaparsec as MP
 import Text.RawString.QQ (r)
@@ -20,6 +21,10 @@ tests = do
 num = 20 |]
         `shouldParse` Module "Main" [Def "num" (Literal $ LiteralInt 20)]
       parse
+        `shouldFailOn` [r|
+num =
+20 |]
+      parse
         [r|
 num =
   let
@@ -29,10 +34,15 @@ num =
       parse
         `shouldFailOn` [r|
                  num = 20 |]
-    it "ww" $ do
+    it "should parse multiple definitions" $ do
       parse
         [r|
 num = 20
-
-str = "2" |]
-        `shouldParse` Module "Main" [Def "num" (Literal $ LiteralInt 20)]
+str = "ww"
+fn a b c = @stuff b c a |]
+        `shouldParse` Module
+          "Main"
+          [ Def "num" (Literal (LiteralInt 20)),
+            Def "str" (Literal (LiteralString "ww")),
+            Def "fn" $ "a" *->> "b" *->> "c" *->> Var "stuff" `call` Var "b" `call` Var "c" `call` Var "a"
+          ]

@@ -30,7 +30,7 @@ identifier = do
     else pure name
 
 parameter :: MParser String
-parameter = lexeme identifier
+parameter = identifier
 
 varP :: MParser Expression
 varP = Var <$> lexeme identifier
@@ -54,7 +54,7 @@ letBindingP = withLineFold $ \sp -> do
 lambdaP :: MParser Expression
 lambdaP = withLineFold $ \sp -> do
   char '\\'
-  var <- lexeme identifier
+  var <- lexeme parameter
   sp
   string "->"
   Lambda var <$> L.lexeme sp expressionP

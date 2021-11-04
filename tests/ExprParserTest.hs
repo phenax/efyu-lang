@@ -4,6 +4,7 @@ import Efyu.Syntax.Expression
 import Efyu.Syntax.Syntax
 import Test.Hspec
 import Test.Hspec.Megaparsec
+import TestHelpers
 import Text.Megaparsec (MonadParsec (eof))
 import qualified Text.Megaparsec as MP
 import Text.RawString.QQ (r)
@@ -132,52 +133,46 @@ tests = do
 
     describe "lambda expression" $ do
       it "should parse simple lambda" $ do
-        p [r|\x -> x|] `shouldParse` Lambda "x" (Var "x")
-        p [r| \x -> 200 |] `shouldParse` Lambda "x" (Literal . LiteralInt $ 200)
-        p [r| \x -> "wow" |] `shouldParse` Lambda "x" (Literal . LiteralString $ "wow")
+        p [r|\x -> x|] `shouldParse` ("x" *->> Var "x")
+        p [r| \x -> 200 |] `shouldParse` ("x" *->> Literal (LiteralInt 200))
+        p [r| \x -> "wow" |] `shouldParse` ("x" *->> Literal (LiteralString "wow"))
       it "should parse nested lambdas" $ do
         p [r| \x -> \foobar -> @add x foobar |]
-          `shouldParse` Lambda
-            "x"
-            ( Lambda
-                "foobar"
-                ( Apply
-                    (Apply (Var "add") (Var "x"))
-                    (Var "foobar")
-                )
-            )
+          `shouldParse` ( "x" *->> "foobar"
+                            *->> Var "add" `call` Var "x" `call` Var "foobar"
+                        )
 
     describe "apply expression" $ do
       it "should parse simple application" $ do
-        p [r|@add 2|] `shouldParse` Apply (Var "add") (Literal . LiteralInt $ 2)
-        p [r| @add x 2.1 |] `shouldParse` Apply (Apply (Var "add") (Var "x")) (Literal . LiteralFloat $ 2.1)
+        p [r|@add 2|] `shouldParse` (Var "add" `call` Literal (LiteralInt 2))
+        p [r| @add x 2.1 |] `shouldParse` (Var "add" `call` Var "x" `call` Literal (LiteralFloat 2.1))
         p
           [r|
           @add
             2
             2.1 |]
-          `shouldParse` Apply (Apply (Var "add") (Literal . LiteralInt $ 2)) (Literal . LiteralFloat $ 2.1)
+          `shouldParse` (Var "add" `call` Literal (LiteralInt 2) `call` Literal (LiteralFloat 2.1))
       it "should parse apply for lambda expression" $ do
-        p [r| @(\x -> x) y |] `shouldParse` Apply (Lambda "x" (Var "x")) (Var "y")
+        p [r| @(\x -> x) y |] `shouldParse` (("x" *->> Var "x") `call` Var "y")
       it "should parse nested application" $ do
         p [r| @add (@foo x) y |]
-          `shouldParse` Apply (Apply (Var "add") (Apply (Var "foo") (Var "x"))) (Var "y")
+          `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x") `call` Var "y")
         p [r| @(@add (@foo x)) y |]
-          `shouldParse` Apply (Apply (Var "add") (Apply (Var "foo") (Var "x"))) (Var "y")
+          `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x") `call` Var "y")
       it "should allow different layouts" $ do
         p
           [r|
           @add
             x
             y |]
-          `shouldParse` Apply (Apply (Var "add") (Var "x")) (Var "y")
+          `shouldParse` (Var "add" `call` Var "x" `call` Var "y")
         p
           [r|
           @add
             (@foo
               x)
             y |]
-          `shouldParse` Apply (Apply (Var "add") (Apply (Var "foo") (Var "x"))) (Var "y")
+          `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x") `call` Var "y")
         p
           `shouldFailOn` [r|
           @add

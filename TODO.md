@@ -9,6 +9,7 @@
   - [ ] Function application parser (without @)
   - [ ] Test with https://hackage.haskell.org/package/hspec-megaparsec-2.2.0/docs/Test-Hspec-Megaparsec.html
   - [ ] Use Text
+  - [ ] Ignore blank lines with whitespace
 
 ## Pattern matching
   - [ ] Patterns parsing
