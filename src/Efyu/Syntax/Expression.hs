@@ -64,7 +64,7 @@ applyP = withLineFold $ \sp -> do
   char '@'
   fn <- L.lexeme sp expressionP
   sp
-  params <- some $ L.lexeme sp expressionP
+  params <- some $ sp >> expressionP
   pure $ foldl' Apply fn params
 
 expressionP :: MParser Expression

@@ -46,3 +46,25 @@ fn a b c = @stuff b c a |]
             Def "str" (Literal (LiteralString "ww")),
             Def "fn" $ "a" *->> "b" *->> "c" *->> Var "stuff" `call` Var "b" `call` Var "c" `call` Var "a"
           ]
+    it "should parse different styles for definitions" $ do
+      parse
+        [r|
+num =
+  20
+
+str =
+  "ww"
+
+fn a b =
+  @stuff
+    a
+    b
+
+dummy = 2|]
+        `shouldParse` Module
+          "Main"
+          [ Def "num" (Literal (LiteralInt 20)),
+            Def "str" (Literal (LiteralString "ww")),
+            Def "fn" $ "a" *->> "b" *->> Var "stuff" `call` Var "a" `call` Var "b",
+            Def "dummy" (Literal $ LiteralInt 2)
+          ]

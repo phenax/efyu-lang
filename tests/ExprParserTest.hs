@@ -122,6 +122,19 @@ tests = do
           ]
           (Var "x")
       p
+        [r|
+          let
+            x =
+              @add 1 2
+            y =
+              "wow"
+          in x|]
+        `shouldParse` Let
+          [ ("x", Var "add" `call` Literal (LiteralInt 1) `call` Literal (LiteralInt 2)),
+            ("y", Literal $ LiteralString "wow")
+          ]
+          (Var "x")
+      p
         `shouldFailOn` [r|
           let
           x = 200.;
