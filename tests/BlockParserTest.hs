@@ -60,7 +60,9 @@ fn a b =
     a
     b
 
-dummy = 2|]
+dummy = 2
+
+|]
         `shouldParse` Module
           "Main"
           [ Def "num" (int 20),

@@ -13,18 +13,9 @@ data Block
   | Def Identifier Expression
   deriving (Show, Eq)
 
--- TODO: Allow patterns
--- TODO: Re-use defineFnP in let bindings
 defineFnP :: MParser Block
-defineFnP = withLineFold $ \sp -> do
-  name <- identifier
-  sp
-  params <- (parameter <* sc) `manyTill` (sp >> char '=')
-  sp
-  -- char '='
-  body <- sp >> expressionP
-  optional (char ';')
-  let func = foldr Lambda body params
+defineFnP = do
+  (name, func) <- definitionP
   pure $ Def name func
 
 definitionListP :: (MParser Block -> MParser Block) -> MParser [Block]

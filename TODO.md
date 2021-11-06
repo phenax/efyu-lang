@@ -6,8 +6,8 @@
   - [X] Function application parser
   - [X] Module parser
   - [X] Function application parser (without @)
-  - [ ] Type checker
   - [ ] Type annotations parsing
+  - [ ] Type checker
   - [ ] Nested module parser
   - [ ] Fix nested let expression indentation issue
   - [ ] Replace char, string, etc parsers with lexer helpers

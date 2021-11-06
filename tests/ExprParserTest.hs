@@ -48,6 +48,10 @@ tests = do
     it "should parse simple let binding" $ do
       p [r| let x = 200. in x |]
         `shouldParse` Let [("x", float 200.0)] (Var "x")
+      p [r| let x a = add a in x |]
+        `shouldParse` Let [("x", "a" *->> Var "add" `call` Var "a")] (Var "x")
+      p [r| let x a b = add a b in x |]
+        `shouldParse` Let [("x", "a" *->> "b" *->> Var "add" `call` Var "a" `call` Var "b")] (Var "x")
     it "should parse nested let binding" $ do
       p [r| let x = let y = 200.0 in y; in x |]
         `shouldParse` Let
@@ -154,6 +158,28 @@ tests = do
     it "should parse nested lambdas" $ do
       p [r| \x -> \foobar -> add x foobar |]
         `shouldParse` ("x" *->> "foobar" *->> Var "add" `call` Var "x" `call` Var "foobar")
+    it "should parse lambda inside let definition" $ do
+      p
+        [r|
+        let
+          fn =
+            \x -> mul x 5
+         in fn 5
+        |]
+        `shouldParse` Let
+          [("fn", "x" *->> Var "mul" `call` Var "x" `call` int 5)]
+          (Var "fn" `call` int 5)
+    it "should parse lambda defintion in let" $ do
+      p
+        [r|
+        let
+          fn x =
+            mul x 5
+         in fn 5
+        |]
+        `shouldParse` Let
+          [("fn", "x" *->> Var "mul" `call` Var "x" `call` int 5)]
+          (Var "fn" `call` int 5)
 
   describe "apply expression" $ do
     it "should parse simple application" $ do

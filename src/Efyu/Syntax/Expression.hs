@@ -1,5 +1,6 @@
 module Efyu.Syntax.Expression where
 
+import Data.Foldable (Foldable (foldr'))
 import Data.List (foldl')
 import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
@@ -22,13 +23,13 @@ parameter = identifier
 varP :: MParser Expression
 varP = Var <$> lexeme identifier
 
-definitionP :: MParser (String, Expression)
+definitionP :: MParser (Identifier, Expression)
 definitionP = withLineFold $ \sp -> do
-  name <- identifier
-  sp >> char '='
-  value <- sp >> expressionP <* sc
+  name <- identifier <* sp
+  params <- (parameter <* sp) `manyTill` char '='
+  body <- sp >> expressionP
   optional (char ';')
-  pure (name, value)
+  pure (name, foldr' Lambda body params)
 
 letBindingP :: MParser Expression
 letBindingP = withLineFold $ \sp -> do
