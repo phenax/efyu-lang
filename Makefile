@@ -13,7 +13,7 @@ run: hpack
 	$(CABAL) v2-run $(NAME)
 
 run-w:
-	$(NODEMON) --exec '(clear && make run) || true' -e .hs --ignore dist-newstyle
+	$(NODEMON) --exec '(clear && make run) || true' -e .hs,.fu --ignore dist-newstyle
 
 test: hpack
 	$(CABAL) v2-test

@@ -8,10 +8,10 @@
   - [X] Function application parser (without @)
   - [X] Test with hspec-megaparsec
   - [X] Try hpack
+  - [ ] Fix indentation issues (indent from reference expression not reference source character)
   - [ ] Type annotations parsing
   - [ ] Type checker
   - [ ] Nested module parser
-  - [ ] Fix nested let expression indentation issue
   - [ ] Infix operators
   - [ ] Custom infix operators?
   - [ ] Use Text
