@@ -8,12 +8,13 @@
   - [X] Function application parser (without @)
   - [X] Test with hspec-megaparsec
   - [X] Try hpack
-  - [ ] Type annotations parsing
+  - [X] Type annotations parsing
   - [ ] Type checker
   - [ ] If expression
   - [ ] Implement recursion for type inference
-  - [ ] Fix indentation issues (indent from reference expression not reference source character)
+  - [ ] :Fix: indentation issues (indent from reference expression not reference source character)
   - [ ] List literal + type
+  - [ ] :Fix: Type annotation indentation issue
   - [ ] Tuple literal + type
   - [ ] Nested module parser
   - [ ] Infix operators

@@ -2,6 +2,7 @@ module BlockParserTest where
 
 import Efyu.Syntax.Block
 import Efyu.Syntax.Syntax
+import Efyu.Types.Types
 import Test.Hspec
 import Test.Hspec.Megaparsec
 import TestHelpers
@@ -69,4 +70,32 @@ dummy = 2
             Def "str" (str "ww"),
             Def "fn" $ "a" *->> "b" *->> Var "stuff" `call` Var "a" `call` Var "b",
             Def "dummy" (int 2)
+          ]
+
+  describe "definitions with type annotations" $ do
+    it "should parse definitions along with annotations" $ do
+      parse
+        [r|
+num :: Int
+num = 20
+|]
+        `shouldParse` Module
+          "Main"
+          [ Def "_" (TypeAnnotation "num" TInt),
+            Def "num" (int 20)
+          ]
+      parse
+        [r|
+ello :: Int
+ello = 20
+
+num :: Int -> String -> Bool
+num a b = c
+|]
+        `shouldParse` Module
+          "Main"
+          [ Def "_" (TypeAnnotation "ello" TInt),
+            Def "ello" (int 20),
+            Def "_" (TypeAnnotation "num" $ TInt `tlam` TString `tlam` TBool),
+            Def "num" ("a" *->> "b" *->> Var "c")
           ]

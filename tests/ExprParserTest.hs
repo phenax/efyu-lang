@@ -282,7 +282,41 @@ tests = do
         add (foo
         x) y |]
 
-  describe "type annotations" $ do
+  describe "type annotations in let defintion" $ do
+    it "should parse definitions types" $ do
+      p
+        [r|
+        let
+            foo :: Int -> String
+            foo x = show x
+          in foo 5
+        |]
+        `shouldParse` Let
+          [ ("_", TypeAnnotation "foo" $ TInt `tlam` TString),
+            ("foo", "x" *->> Var "show" `call` Var "x")
+          ]
+          (Var "foo" `call` int 5)
+    it "should parse definitions types in muliple lines" $ do
+      p
+        [r|
+        let
+            foo :: Int -> String
+            foo x = show x
+            foo1 ::
+              Int ->
+              Int
+            foo1 x = 1
+          in foo 5
+        |]
+        `shouldParse` Let
+          [ ("_", TypeAnnotation "foo" $ TInt `tlam` TString),
+            ("foo", "x" *->> Var "show" `call` Var "x"),
+            ("_", TypeAnnotation "foo1" $ TInt `tlam` TInt),
+            ("foo1", "x" *->> int 1)
+          ]
+          (Var "foo" `call` int 5)
+
+  describe "typeAnnotationP > type annotations" $ do
     let tp = MP.parse (typeAnnotationP <* eof) "type.fu"
     it "should parse primitive types" $ do
       tp [r|name :: String |] `shouldParse` TypeAnnotation "name" TString

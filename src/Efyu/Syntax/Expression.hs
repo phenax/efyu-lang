@@ -3,7 +3,7 @@ module Efyu.Syntax.Expression where
 import Data.Foldable (Foldable (foldr'))
 import Data.List (foldl')
 import Efyu.Syntax.Syntax
-import Efyu.Syntax.Type ()
+import Efyu.Syntax.Type (typeAnnotationP)
 import Efyu.Syntax.Utils
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -25,12 +25,14 @@ varP :: MParser Expression
 varP = Var <$> lexeme identifier
 
 definitionP :: MParser (Identifier, Expression)
-definitionP = withLineFold $ \sp -> do
-  name <- identifier <* sp
-  params <- (parameter <* sp) `manyTill` char '='
-  body <- sp >> expressionP
-  optional (char ';')
-  pure (name, foldr' Lambda body params)
+definitionP = try defP <|> (("_",) <$> typeAnnotationP)
+  where
+    defP = withLineFold $ \sp -> do
+      name <- identifier <* sp
+      params <- (parameter <* sp) `manyTill` char '='
+      body <- sp >> expressionP
+      optional (char ';')
+      pure (name, foldr' Lambda body params)
 
 letBindingP :: MParser Expression
 letBindingP = withLineFold $ \sp -> do
