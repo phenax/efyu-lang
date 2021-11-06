@@ -118,3 +118,6 @@ inferType :: TypeEnv -> Expression -> TI Type
 inferType env expr = do
   (subst, ty) <- inferType' env expr
   pure $ apply subst ty
+
+---
+---

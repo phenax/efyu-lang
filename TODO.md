@@ -5,7 +5,7 @@
   - [X] Manage indents
   - [X] Function application parser
   - [X] Module parser
-  - [ ] Function application parser (without @)
+  - [X] Function application parser (without @)
   - [ ] Type checker
   - [ ] Type annotations parsing
   - [ ] Nested module parser

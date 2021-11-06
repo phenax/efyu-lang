@@ -5,6 +5,7 @@ import Efyu.Syntax.Syntax
 import Efyu.Types.Infer
 import Efyu.Types.Types
 import Test.Hspec
+import TestHelpers
 
 tests =
   describe "Type inference" $ do
@@ -15,38 +16,42 @@ tests =
       infer (Literal $ LiteralString "") `shouldReturn` Right TString
       infer (Literal $ LiteralFloat 20.0) `shouldReturn` Right TFloat
       infer (Literal $ LiteralBool True) `shouldReturn` Right TBool
+
     it "should infer lambda types" $ do
-      infer (Lambda "x" (Literal $ LiteralFloat 0.0))
+      infer ("x" *->> Literal (LiteralFloat 0.0))
         `shouldReturn` Right (TLambda (TVar "a0") TFloat)
+
     it "should infer function application" $ do
-      infer (Apply (Lambda "x" (Literal $ LiteralInt 3)) (Literal $ LiteralFloat 0.0))
+      infer (("x" *->> Literal (LiteralInt 3)) `call` Literal (LiteralFloat 0.0))
         `shouldReturn` Right TInt
-      infer (Apply (Lambda "x" (Var "x")) (Literal $ LiteralFloat 0.0))
+      infer (("x" *->> Var "x") `call` Literal (LiteralFloat 0.0))
         `shouldReturn` Right TFloat
-      infer (Apply (Lambda "x" (Lambda "y" (Var "y"))) (Literal $ LiteralFloat 0.0))
+      infer (("x" *->> "y" *->> Var "y") `call` Literal (LiteralFloat 0.0))
         `shouldReturn` Right (TLambda (TVar "a2") (TVar "a2"))
       infer
         ( Let
             [ ("x", Literal . LiteralInt $ 200),
-              ("id", Lambda "x" $ Var "x")
+              ("id", "x" *->> Var "x")
             ]
-            (Apply (Var "id") (Var "x"))
+            (Var "id" `call` Var "x")
         )
         `shouldReturn` Right TInt
+
     it "should error out for invalid variables" $ do
       infer (Var "foobar")
         `shouldReturn` Left "Unbound variable foobar"
-      infer (Lambda "x" (Var "x1"))
+      infer ("x" *->> Var "x1")
         `shouldReturn` Left "Unbound variable x1"
+
     it "should infer types from let bindings" $ do
       infer (Let [("x", Literal . LiteralInt $ 200)] (Var "x"))
         `shouldReturn` Right TInt
       infer
         ( Let
             [ ("x", Literal . LiteralInt $ 200),
-              ("id", Lambda "x" $ Var "x")
+              ("id", "x" *->> Var "x")
             ]
-            (Apply (Var "id") (Var "x"))
+            (Var "id" `call` Var "x")
         )
         `shouldReturn` Right TInt
 
