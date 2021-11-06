@@ -1,6 +1,7 @@
 module Efyu.Syntax.Utils where
 
 import Control.Monad (void)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (fromMaybe)
 import Data.Void (Void)
 import Text.Megaparsec
@@ -43,6 +44,18 @@ float = fl <|> L.signed sc fl
       n <- digitChar `someTill` char '.'
       dec <- fromMaybe "0" <$> optional (some digitChar)
       pure . read $ n ++ "." ++ dec
+
+reservedKeywords :: [String]
+reservedKeywords = ["let", "in", "if", "then", "else"]
+
+identifier :: MParser String
+identifier = do
+  f <- letterChar
+  rest <- many (alphaNumChar <|> oneOf "_'?")
+  let name = f : rest
+  if name `elem` reservedKeywords
+    then unexpected $ Label (f :| rest)
+    else pure name
 
 insideQuotes :: MParser String
 insideQuotes = char '"' >> manyTill L.charLiteral (char '"')

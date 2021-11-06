@@ -9,6 +9,7 @@
   - [ ] Type checker
   - [ ] Type annotations parsing
   - [ ] Nested module parser
+  - [ ] Fix nested let expression indentation issue
   - [ ] Replace char, string, etc parsers with lexer helpers
   - [ ] Test with https://hackage.haskell.org/package/hspec-megaparsec-2.2.0/docs/Test-Hspec-Megaparsec.html
   - [ ] Use Text

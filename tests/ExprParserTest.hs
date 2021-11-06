@@ -15,7 +15,8 @@ tests = do
   describe "literal expression" $ do
     it "should parse literal string" $ do
       p [r|"hell"|] `shouldParse` Literal (LiteralString "hell")
-      p [r|"121lk~!@#$%^&*()_+-=`[]\\;',./"|] `shouldParse` Literal (LiteralString "121lk~!@#$%^&*()_+-=`[]\\;',./")
+      p [r|"121lk~!@#$%^&*()_+-=`[]\\;',./"|]
+        `shouldParse` Literal (LiteralString "121lk~!@#$%^&*()_+-=`[]\\;',./")
     it "should parse literal int" $ do
       p [r|2005|] `shouldParse` Literal (LiteralInt 2005)
       p [r|0|] `shouldParse` Literal (LiteralInt 0)
@@ -59,9 +60,10 @@ tests = do
           (Var "x")
       p -- TODO: This is incorrect behavior fix later
         [r|
-        let x =
-              let y = 200.0
-            in y;
+        let
+          x = let
+                y = 200.0
+            in y
           in x |]
         `shouldParse` Let
           [ ( "x",
