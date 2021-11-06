@@ -108,11 +108,10 @@ inferType' env = \case
 resolveBindings :: TypeEnv -> [(Identifier, Expression)] -> TI (TypeSubst, TypeEnv)
 resolveBindings env = foldM getSubstEnv (Map.empty, env)
   where
-    getSubstEnv (st, env) (name, expr) = do
-      (stBinding, tyBinding) <- inferType' env expr
-      let ty' = generalize (apply stBinding env) tyBinding
-      let env' = Map.insert name ty' env
-      pure (Map.union st stBinding, env')
+    getSubstEnv (st, env') (name, expr) = do
+      (stBinding, tyBinding) <- inferType' env' expr
+      let ty' = generalize (apply stBinding env') tyBinding
+      pure (Map.union st stBinding, Map.insert name ty' env')
 
 inferType :: TypeEnv -> Expression -> TI Type
 inferType env expr = do

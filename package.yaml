@@ -12,6 +12,7 @@ ghc-options:
   -Wextra
   -Wno-unused-do-bind
   -fwarn-tabs
+  -Wname-shadowing
 
 dependencies:
   - base >=4.14 && <4.15

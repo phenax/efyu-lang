@@ -33,7 +33,7 @@ library
       TupleSections
       FlexibleInstances
       TypeSynonymInstances
-  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs -Wname-shadowing
   build-depends:
       base ==4.14.*
     , containers
@@ -65,7 +65,7 @@ executable efyu
       TupleSections
       FlexibleInstances
       TypeSynonymInstances
-  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs -Wname-shadowing
   build-depends:
       base ==4.14.*
     , containers
@@ -102,7 +102,7 @@ test-suite efyu-test
       TupleSections
       FlexibleInstances
       TypeSynonymInstances
-  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs -Wname-shadowing
   build-depends:
       base ==4.14.*
     , containers

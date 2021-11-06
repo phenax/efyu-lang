@@ -7,14 +7,14 @@
   - [X] Module parser
   - [X] Function application parser (without @)
   - [X] Test with hspec-megaparsec
-  - [ ] Try hpack
-  - [ ] Use Text
+  - [X] Try hpack
   - [ ] Type annotations parsing
   - [ ] Type checker
   - [ ] Nested module parser
   - [ ] Fix nested let expression indentation issue
   - [ ] Infix operators
   - [ ] Custom infix operators?
+  - [ ] Use Text
 
 ## Pattern matching
   - [ ] Patterns parsing

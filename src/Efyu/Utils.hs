@@ -18,4 +18,4 @@ peekM prefix m = do
 
 -- | Delete a set of keys from a Map
 mapDeleteKeys :: (Ord k) => [k] -> Map.Map k a -> Map.Map k a
-mapDeleteKeys keys map = foldr Map.delete map keys
+mapDeleteKeys keys m = foldr Map.delete m keys
