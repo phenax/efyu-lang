@@ -60,16 +60,16 @@ lambdaP = withLineFold $ \sp -> do
 
 applyP :: MParser Expression
 applyP = withLineFold $ \sp -> do
-  fn <- (try varP <|> withParens expressionP) <* sp
+  fn <- try varP <|> withParens expressionP
+  debugM fn
   params <- argParser sp []
   if null params
     then pure fn
     else pure $ foldl' Apply fn params
   where
     argParser sp ls = do
-      optn <- optional $ try literalP <|> try varP <|> try (withParens expressionP)
-      sp
-      debugM optn
+      optn <- optional . try $ sp >> (literalP <|> varP <|> withParens expressionP)
+      sc
       case optn of
         Nothing -> pure ls
         Just p -> argParser sp $ ls ++ [p]

@@ -179,7 +179,7 @@ tests = do
       p [r| ((foo x 1) y) |]
         `shouldParse` ((Var "foo" `call` Var "x" `call` int 1) `call` Var "y")
 
-    fit "should parse apply inside let" $ do
+    it "should parse apply inside let" $ do
       p [r| let x = add 1 in x |]
         `shouldParse` Let [("x", Var "add" `call` int 1)] (Var "x")
       p
@@ -188,19 +188,23 @@ tests = do
           x = 1
         in add 1 x |]
         `shouldParse` Let [("x", int 1)] (Var "add" `call` int 1 `call` Var "x")
-      -- p
-      --   [r|
-      --   let
-      --     x = add 1 2;
-      --     y = get "num" 2;
-      --   in add x y|]
-      --   `shouldParse` Let [("x", Var "add" `call` int 1)] (Var "x")
       p
         [r|
         let
-          x = add 1
+          x = add 1 2 3
         in x|]
-        `shouldParse` Let [("x", Var "add" `call` int 1)] (Var "x")
+        `shouldParse` Let [("x", Var "add" `call` int 1 `call` int 2 `call` int 3)] (Var "x")
+      p
+        [r|
+        let
+          x = add 1 2
+          y = get "num" 2;
+        in mul x y|]
+        `shouldParse` Let
+          [ ("x", Var "add" `call` int 1 `call` int 2),
+            ("y", Var "get" `call` str "num" `call` int 2)
+          ]
+          (Var "mul" `call` Var "x" `call` Var "y")
 
     it "should allow different layouts" $ do
       p
