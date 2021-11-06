@@ -1,0 +1,12 @@
+-- module Test where
+--   gam = 200
+--   add5 = add 5
+
+id x = x
+
+main =
+  let
+      x = 20
+      id = id
+    in id x
+
