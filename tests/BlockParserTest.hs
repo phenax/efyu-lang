@@ -39,7 +39,7 @@ num =
         [r|
 num = 20
 str = "ww"
-fn a b c = @stuff b c a |]
+fn a b c = stuff b c a |]
         `shouldParse` Module
           "Main"
           [ Def "num" (int 20),
@@ -56,7 +56,7 @@ str =
   "ww"
 
 fn a b =
-  @stuff
+  stuff
     a
     b
 

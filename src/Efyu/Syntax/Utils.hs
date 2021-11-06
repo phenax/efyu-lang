@@ -9,7 +9,10 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 withOptionalParens :: MParser a -> MParser a
 withOptionalParens comb =
-  between (char '(') (char ')') (lexeme comb) <|> comb
+  withParens (lexeme comb) <|> comb
+
+withParens :: MParser a -> MParser a
+withParens = between (char '(') (char ')')
 
 type MParser = Parsec Void String
 

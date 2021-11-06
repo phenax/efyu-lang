@@ -4,12 +4,16 @@
   - [X] Use megaparsec?
   - [X] Manage indents
   - [X] Function application parser
-  - [ ] Module parser
-  - [ ] Replace char, string, etc parsers with lexer helpers
+  - [X] Module parser
   - [ ] Function application parser (without @)
+  - [ ] Type checker
+  - [ ] Type annotations parsing
+  - [ ] Nested module parser
+  - [ ] Replace char, string, etc parsers with lexer helpers
   - [ ] Test with https://hackage.haskell.org/package/hspec-megaparsec-2.2.0/docs/Test-Hspec-Megaparsec.html
   - [ ] Use Text
   - [ ] Ignore blank lines with whitespace
+  - [ ] Try hpack
 
 ## Pattern matching
   - [ ] Patterns parsing

@@ -4,21 +4,22 @@ import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
+import Efyu.Utils (debugM)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
 literalP :: MParser Expression
-literalP = Literal <$> lexeme p
+literalP = Literal <$> p
   where
-    p = try floatP <|> intP <|> stringP <|> boolP
+    p = try floatP <|> intP <|> stringP <|> try boolP
     floatP = LiteralFloat <$> float
     intP = LiteralInt <$> integer
     stringP = LiteralString <$> insideQuotes
     boolP = LiteralBool . (== "True") <$> (symbol "True" <|> symbol "False")
 
 reservedKeywords :: [String]
-reservedKeywords = ["let", "in"]
+reservedKeywords = ["let", "in", "if", "then", "else"]
 
 identifier :: MParser String
 identifier = do
@@ -37,40 +38,55 @@ varP = Var <$> lexeme identifier
 
 definitionP :: MParser (String, Expression)
 definitionP = withLineFold $ \sp -> do
-  name <- lexeme identifier
-  char '='
-  sp
-  value <- expressionP
+  name <- identifier
+  sp >> char '='
+  value <- sp >> bareExpressionP <* sc
   optional (char ';')
-  scnl
   pure (name, value)
 
 letBindingP :: MParser Expression
 letBindingP = withLineFold $ \sp -> do
   L.symbol sp "let"
-  vars <- definitionP `someTill` L.symbol sp "in"
-  Let vars <$> expressionP
+  vars <- (definitionP <* scnl) `someTill` L.symbol sp "in"
+  Let vars <$> bareExpressionP
 
 lambdaP :: MParser Expression
 lambdaP = withLineFold $ \sp -> do
   char '\\'
   var <- lexeme parameter
   sp
-  string "->"
-  Lambda var <$> L.lexeme sp expressionP
+  symbol "->"
+  Lambda var <$> (sp >> bareExpressionP)
 
 applyP :: MParser Expression
 applyP = withLineFold $ \sp -> do
-  char '@'
-  fn <- L.lexeme sp expressionP
-  sp
-  params <- some $ sp >> expressionP
-  pure $ foldl' Apply fn params
+  fn <- (try varP <|> withParens expressionP) <* sp
+  params <- argParser sp []
+  if null params
+    then pure fn
+    else pure $ foldl' Apply fn params
+  where
+    argParser sp ls = do
+      optn <- optional $ try literalP <|> try varP <|> try (withParens expressionP)
+      sp
+      debugM optn
+      case optn of
+        Nothing -> pure ls
+        Just p -> argParser sp $ ls ++ [p]
+
+bareExpressionP :: MParser Expression
+bareExpressionP =
+  (try . parens) literalP
+    <|> (try . parens) letBindingP
+    <|> try applyP
+    <|> (try . parens) lambdaP
+    <|> (try . parens) varP
+    <?> "<expr>"
+  where
+    parens = withOptionalParens
 
 expressionP :: MParser Expression
-expressionP = scnl >> withOptionalParens p <* scnl
-  where
-    p = letBindingP <|> lambdaP <|> literalP <|> try applyP <|> varP <?> "Syntax parsing error"
+expressionP = scnl >> bareExpressionP <* scnl
 
 --
 --

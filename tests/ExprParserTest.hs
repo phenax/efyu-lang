@@ -125,7 +125,7 @@ tests = do
         [r|
           let
             x =
-              @add 1 2
+              add 1 2
             y =
               "wow"
           in x|]
@@ -144,58 +144,88 @@ tests = do
           let x = 200.; in
           x |]
 
-    describe "lambda expression" $ do
-      it "should parse simple lambda" $ do
-        p [r|\x -> x|] `shouldParse` ("x" *->> Var "x")
-        p [r| \x -> 200 |] `shouldParse` ("x" *->> int 200)
-        p [r| \x -> "wow" |] `shouldParse` ("x" *->> str "wow")
-      it "should parse nested lambdas" $ do
-        p [r| \x -> \foobar -> @add x foobar |]
-          `shouldParse` ( "x" *->> "foobar"
-                            *->> Var "add" `call` Var "x" `call` Var "foobar"
-                        )
+  describe "lambda expression" $ do
+    it "should parse simple lambda" $ do
+      p [r|\x -> x|] `shouldParse` ("x" *->> Var "x")
+      p [r| \x -> 200 |] `shouldParse` ("x" *->> int 200)
+      p [r| \x -> "wow" |] `shouldParse` ("x" *->> str "wow")
+    it "should parse nested lambdas" $ do
+      p [r| \x -> \foobar -> add x foobar |]
+        `shouldParse` ("x" *->> "foobar" *->> Var "add" `call` Var "x" `call` Var "foobar")
 
-    describe "apply expression" $ do
-      it "should parse simple application" $ do
-        p [r|@add 2|] `shouldParse` (Var "add" `call` int 2)
-        p [r| @add x 2.1 |] `shouldParse` (Var "add" `call` Var "x" `call` float 2.1)
-        p
-          [r|
-          @add
-            2
-            2.1 |]
-          `shouldParse` (Var "add" `call` int 2 `call` float 2.1)
-      it "should parse apply for lambda expression" $ do
-        p [r| @(\x -> x) y |] `shouldParse` (("x" *->> Var "x") `call` Var "y")
-      it "should parse nested application" $ do
-        p [r| @add (@foo x) y |]
-          `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x") `call` Var "y")
-        p [r| @(@add (@foo x)) y |]
-          `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x") `call` Var "y")
-      it "should allow different layouts" $ do
-        p
-          [r|
-          @add
-            x
-            y |]
-          `shouldParse` (Var "add" `call` Var "x" `call` Var "y")
-        p
-          [r|
-          @add
-            (@foo
-              x)
-            y |]
-          `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x") `call` Var "y")
-        p
-          `shouldFailOn` [r|
-          @add
-          (@foo
-          x)
+  describe "apply expression" $ do
+    it "should parse simple application" $ do
+      p [r|add 2|] `shouldParse` (Var "add" `call` int 2)
+      p [r| add x 2.1 |] `shouldParse` (Var "add" `call` Var "x" `call` float 2.1)
+      p [r| (foo x 1) |] `shouldParse` (Var "foo" `call` Var "x" `call` int 1)
+      p
+        [r|
+        add
+          2
+          2.1 |]
+        `shouldParse` (Var "add" `call` int 2 `call` float 2.1)
+
+    it "should parse apply for lambda expression" $ do
+      p [r| goob ber |] `shouldParse` (Var "goob" `call` Var "ber")
+      p [r| (\x -> x) y |] `shouldParse` (("x" *->> Var "x") `call` Var "y")
+
+    it "should parse nested application" $ do
+      p [r| foo (bar x) |]
+        `shouldParse` (Var "foo" `call` (Var "bar" `call` Var "x"))
+      p [r| add (foo x 1) y |]
+        `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x" `call` int 1) `call` Var "y")
+      p [r| (add (foo x 1)) y |]
+        `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x" `call` int 1) `call` Var "y")
+      p [r| ((foo x 1) y) |]
+        `shouldParse` ((Var "foo" `call` Var "x" `call` int 1) `call` Var "y")
+
+    fit "should parse apply inside let" $ do
+      p [r| let x = add 1 in x |]
+        `shouldParse` Let [("x", Var "add" `call` int 1)] (Var "x")
+      p
+        [r|
+        let
+          x = 1
+        in add 1 x |]
+        `shouldParse` Let [("x", int 1)] (Var "add" `call` int 1 `call` Var "x")
+      -- p
+      --   [r|
+      --   let
+      --     x = add 1 2;
+      --     y = get "num" 2;
+      --   in add x y|]
+      --   `shouldParse` Let [("x", Var "add" `call` int 1)] (Var "x")
+      p
+        [r|
+        let
+          x = add 1
+        in x|]
+        `shouldParse` Let [("x", Var "add" `call` int 1)] (Var "x")
+
+    it "should allow different layouts" $ do
+      p
+        [r|
+        add
+          x
           y |]
-        p
-          `shouldFailOn` [r|
-          @add (@foo
-          x) y |]
+        `shouldParse` (Var "add" `call` Var "x" `call` Var "y")
+      p
+        [r|
+        add
+          (foo
+            x)
+          y |]
+        `shouldParse` (Var "add" `call` (Var "foo" `call` Var "x") `call` Var "y")
+      p
+        `shouldFailOn` [r|
+        add
+        (foo
+        x)
+        y |]
+      p
+        `shouldFailOn` [r|
+        add (foo
+        x) y |]
 
 --
 --
