@@ -44,6 +44,27 @@ tests = do
       p `shouldFailOn` "$1foobar"
       p `shouldFailOn` "\"1foobar"
 
+  describe "comments" $ do
+    it "should ignore single line comments" $ do
+      p [r|x -- wow|] `shouldParse` Var "x"
+      p [r|\x -> y -- wow|] `shouldParse` ("x" *->> Var "y")
+      p
+        [r|
+        let
+          x = 1 -- define var
+        in x
+        |]
+        `shouldParse` Let [("x", int 1)] (Var "x")
+    it "should ignore multi line comments" $ do
+      p [r|x {- comment -}|] `shouldParse` Var "x"
+      p
+        [r|\x -> y
+      {-
+  Multiline comments
+-}
+        |]
+        `shouldParse` ("x" *->> Var "y")
+
   describe "let binding expression" $ do
     it "should parse simple let binding" $ do
       p [r| let x = 200. in x |]

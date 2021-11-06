@@ -23,8 +23,8 @@ type MParser = Parsec Void String
     L.space (void spaceChar) lineComment blockComment
   )
   where
-    lineComment = L.skipLineComment "//"
-    blockComment = L.skipBlockCommentNested "/*" "*/"
+    lineComment = L.skipLineComment "--"
+    blockComment = L.skipBlockCommentNested "{-" "-}"
 
 lexeme :: MParser a -> MParser a
 lexeme = L.lexeme sc
