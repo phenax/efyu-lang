@@ -6,15 +6,15 @@
   - [X] Function application parser
   - [X] Module parser
   - [X] Function application parser (without @)
+  - [X] Test with hspec-megaparsec
+  - [ ] Try hpack
+  - [ ] Use Text
   - [ ] Type annotations parsing
   - [ ] Type checker
   - [ ] Nested module parser
   - [ ] Fix nested let expression indentation issue
-  - [ ] Replace char, string, etc parsers with lexer helpers
-  - [ ] Test with https://hackage.haskell.org/package/hspec-megaparsec-2.2.0/docs/Test-Hspec-Megaparsec.html
-  - [ ] Use Text
-  - [ ] Ignore blank lines with whitespace
-  - [ ] Try hpack
+  - [ ] Infix operators
+  - [ ] Custom infix operators?
 
 ## Pattern matching
   - [ ] Patterns parsing

@@ -10,6 +10,7 @@ let
   systemPackages = [
     haskellPackages.haskell-language-server
     haskellPackages.cabal-install
+    haskellPackages.hpack
     nodePackages.nodemon
   ];
 

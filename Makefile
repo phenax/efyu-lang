@@ -3,16 +3,19 @@ NAME = efyu
 CABAL = cabal
 NODEMON = nodemon
 
-build:
+hpack:
+	hpack
+
+build: hpack
 	$(CABAL) v2-build
 
-run:
+run: hpack
 	$(CABAL) v2-run $(NAME)
 
 run-w:
 	$(NODEMON) --exec '(clear && make run) || true' -e .hs --ignore dist-newstyle
 
-test:
+test: hpack
 	$(CABAL) v2-test
 
 test-w:

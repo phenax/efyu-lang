@@ -1,67 +1,116 @@
-cabal-version:       2.2
+cabal-version: 1.12
 
-name:                efyu-lang
-version:             0.1.0.0
-license:             MIT
-license-file:        LICENSE
-author:              Akshay Nair
-maintainer:          phenax5@gmail.com
-build-type:          Simple
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
 
-common lib
-  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs -Wno-missing-home-modules
-  -- ghc-options: -Wall
-  build-depends:
-    megaparsec,
-    hspec-megaparsec,
-    containers,
-    pretty-simple,
-    text,
-    raw-strings-qq,
-    transformers,
-    base >=4.14 && <4.15
-  default-language: Haskell2010
-  type: exitcode-stdio-1.0
-  default-extensions:
-    GADTs
-    , LambdaCase
-    , StandaloneDeriving
-    , ScopedTypeVariables
-    , RankNTypes
-    , QuantifiedConstraints
-    , TypeApplications
-    , TypeOperators
-    , MultiParamTypeClasses
-    , ConstraintKinds
-    , DataKinds
-    , PolyKinds
-    , KindSignatures
-    , FlexibleInstances
-    , FlexibleContexts
-    , QuasiQuotes
-    , TupleSections
+name:           efyu-lang
+version:        0.1.0.0
+author:         Akshay Nair
+maintainer:     phenax5@gmail.com
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
 
-Test-Suite test
-  import: lib
-  hs-source-dirs:
-    src
-    tests
-  main-is: _main.hs
-  type: exitcode-stdio-1.0
-  default: false
-  build-depends:
-    hspec,
-    hspec-golden
-
-library library
-  import: lib
-  hs-source-dirs: src
+library
   exposed-modules:
-    Efyu
+      Efyu
+      Efyu.Syntax.Block
+      Efyu.Syntax.Expression
+      Efyu.Syntax.Parse
+      Efyu.Syntax.Syntax
+      Efyu.Syntax.Utils
+      Efyu.Types.Infer
+      Efyu.Types.Types
+      Efyu.Utils
+  other-modules:
+      Paths_efyu_lang
+  hs-source-dirs:
+      src/
+  default-extensions:
+      LambdaCase
+      QuasiQuotes
+      TupleSections
+      FlexibleInstances
+      TypeSynonymInstances
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs
+  build-depends:
+      base ==4.14.*
+    , containers
+    , megaparsec
+    , pretty-simple
+    , text
+    , transformers
+  default-language: Haskell2010
 
 executable efyu
-  import: lib
-  hs-source-dirs:
-    app
-    src
   main-is: Main.hs
+  other-modules:
+      Efyu
+      Efyu.Syntax.Block
+      Efyu.Syntax.Expression
+      Efyu.Syntax.Parse
+      Efyu.Syntax.Syntax
+      Efyu.Syntax.Utils
+      Efyu.Types.Infer
+      Efyu.Types.Types
+      Efyu.Utils
+      Paths_efyu_lang
+  hs-source-dirs:
+      app/
+      src/
+  default-extensions:
+      LambdaCase
+      QuasiQuotes
+      TupleSections
+      FlexibleInstances
+      TypeSynonymInstances
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs
+  build-depends:
+      base ==4.14.*
+    , containers
+    , megaparsec
+    , pretty-simple
+    , text
+    , transformers
+  default-language: Haskell2010
+
+test-suite efyu-test
+  type: exitcode-stdio-1.0
+  main-is: _main.hs
+  other-modules:
+      BlockParserTest
+      ExprParserTest
+      TestHelpers
+      TypeTest
+      Efyu
+      Efyu.Syntax.Block
+      Efyu.Syntax.Expression
+      Efyu.Syntax.Parse
+      Efyu.Syntax.Syntax
+      Efyu.Syntax.Utils
+      Efyu.Types.Infer
+      Efyu.Types.Types
+      Efyu.Utils
+      Paths_efyu_lang
+  hs-source-dirs:
+      tests/
+      src/
+  default-extensions:
+      LambdaCase
+      QuasiQuotes
+      TupleSections
+      FlexibleInstances
+      TypeSynonymInstances
+  ghc-options: -Wdefault -Wextra -Wno-unused-do-bind -fwarn-tabs
+  build-depends:
+      base ==4.14.*
+    , containers
+    , hspec
+    , hspec-megaparsec
+    , megaparsec
+    , pretty-simple
+    , raw-strings-qq
+    , text
+    , transformers
+  default-language: Haskell2010
