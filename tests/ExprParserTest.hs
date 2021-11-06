@@ -2,6 +2,8 @@ module ExprParserTest where
 
 import Efyu.Syntax.Expression
 import Efyu.Syntax.Syntax
+import Efyu.Syntax.Type (typeAnnotationP)
+import Efyu.Types.Types
 import Test.Hspec
 import Test.Hspec.Megaparsec
 import TestHelpers
@@ -279,6 +281,18 @@ tests = do
         `shouldFailOn` [r|
         add (foo
         x) y |]
+
+  describe "type annotations" $ do
+    let tp = MP.parse (typeAnnotationP <* eof) "type.fu"
+    it "should parse primitive types" $ do
+      tp [r|name :: String |] `shouldParse` TypeAnnotation "name" TString
+      tp [r|name :: Int |] `shouldParse` TypeAnnotation "name" TInt
+      tp [r|name :: Bool |] `shouldParse` TypeAnnotation "name" TBool
+      tp [r|name :: Float|] `shouldParse` TypeAnnotation "name" TFloat
+    it "should parse lambda types" $ do
+      tp [r|fn :: String -> Int |] `shouldParse` TypeAnnotation "fn" (TString `tlam` TInt)
+      tp [r|fn :: Bool -> String -> Int |] `shouldParse` TypeAnnotation "fn" (TBool `tlam` TString `tlam` TInt)
+      tp [r|fn :: a -> b -> c |] `shouldParse` TypeAnnotation "fn" (TVar "a" `tlam` TVar "b" `tlam` TVar "c")
 
 --
 --

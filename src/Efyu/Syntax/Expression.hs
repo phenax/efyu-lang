@@ -3,6 +3,7 @@ module Efyu.Syntax.Expression where
 import Data.Foldable (Foldable (foldr'))
 import Data.List (foldl')
 import Efyu.Syntax.Syntax
+import Efyu.Syntax.Type ()
 import Efyu.Syntax.Utils
 import Text.Megaparsec
 import Text.Megaparsec.Char

@@ -1,5 +1,7 @@
 module Efyu.Syntax.Syntax where
 
+import Efyu.Types.Types (Type)
+
 data Literal
   = LiteralString String
   | LiteralInt Integer
@@ -15,4 +17,5 @@ data Expression
   | Var String
   | Apply Expression Expression
   | Lambda Identifier Expression
+  | TypeAnnotation Identifier Type
   deriving (Show, Eq)
