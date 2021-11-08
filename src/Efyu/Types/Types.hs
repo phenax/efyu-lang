@@ -12,6 +12,7 @@ data Type
   | TFloat
   | TBool
   | TVar String
+  | TUnknown
   deriving (Show, Eq)
 
 -- type variable names

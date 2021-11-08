@@ -3,7 +3,6 @@ module Efyu.Types.Infer where
 import Control.Monad (foldM)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Except
-import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -12,28 +11,24 @@ import Efyu.Types.Types
 
 data TIEnv = TIEnv {}
 
-data TIState = TIState {tiSupply :: Int, tiSubst :: TypeSubst}
+type TI = StateT Int (ExceptT String IO)
 
-type TI = StateT TIState (ExceptT String (ReaderT TIEnv IO))
+unificationErrorMessage t1 t2 =
+  "unable to unify types: " ++ show t1 ++ " and " ++ show t2
 
 runTI :: TI a -> IO (Either String a)
 runTI t = do
   res <- run t
   pure $ fst <$> res
   where
-    run =
-      flip runReaderT initTIEnv
-        . runExceptT
-        . flip runStateT initTIState
-    initTIState = TIState {tiSupply = 0, tiSubst = Map.empty}
-    initTIEnv = TIEnv {}
+    run = runExceptT . flip runStateT 0
 
 -- | Create a new type variable
 newTypeVar :: Identifier -> TI Type
 newTypeVar prefix = do
   s <- get
-  put (s {tiSupply = 1 + tiSupply s})
-  pure . TVar $ prefix ++ show (tiSupply s)
+  put $ s + 1
+  pure . TVar $ prefix ++ show s
 
 -- | Unify two types and return substitutions
 unify :: Type -> Type -> TI TypeSubst
@@ -46,7 +41,7 @@ unify t t' = case (t, t') of
     st' <- unify (apply st r) (apply st r')
     pure $ composeSubst st st'
   (ty, ty') ->
-    lift . throwE $ "unable to unify types: " ++ show ty ++ " and " ++ show ty'
+    lift . throwE $ unificationErrorMessage ty ty'
   where
     -- bind a type variable to a type
     -- if it's the same type variable, no substitutions
@@ -103,6 +98,7 @@ inferType' env = \case
     (stBinding, env') <- resolveBindings env bindings
     (stBody, tyBody) <- inferType' (apply stBinding env') body
     pure (stBinding `composeSubst` stBody, tyBody)
+  TypeAnnotation _n ty -> pure (Map.empty, ty)
 
 -- | Resolve a set of bindings to a set of type substitutions and
 resolveBindings :: TypeEnv -> [(Identifier, Expression)] -> TI (TypeSubst, TypeEnv)
@@ -111,7 +107,10 @@ resolveBindings env = foldM getSubstEnv (Map.empty, env)
     getSubstEnv (st, env') (name, expr) = do
       (stBinding, tyBinding) <- inferType' env' expr
       let ty' = generalize (apply stBinding env') tyBinding
-      pure (Map.union st stBinding, Map.insert name ty' env')
+      let tyName = case expr of
+            TypeAnnotation n _ -> n
+            _ -> name
+      pure (Map.union st stBinding, Map.insert tyName ty' env')
 
 inferType :: TypeEnv -> Expression -> TI Type
 inferType env expr = do

@@ -2,6 +2,7 @@ module TypeTest where
 
 import qualified Data.Map as Map
 import Efyu.Syntax.Syntax
+import Efyu.Types.Checker
 import Efyu.Types.Infer
 import Efyu.Types.Types
 import Test.Hspec
@@ -9,6 +10,32 @@ import TestHelpers
 
 tests =
   describe "Type checker" $ do
+    describe "Checker" $ do
+      let check e = runTI . checkType Map.empty e
+
+      it "should check for invalid type annotations" $ do
+        check (int 5) TInt `shouldReturn` Right (int 5)
+        check (int 5) TString
+          `shouldReturn` Left (unificationErrorMessage TString TInt)
+        check
+          ("x" *->> "f" *->> Var "f" `call` Var "x")
+          (TVar "a" `tlam` (TVar "a" `tlam` TVar "b") `tlam` TVar "b")
+          `shouldReturn` Right ("x" *->> "f" *->> Var "f" `call` Var "x")
+        check
+          ("x" *->> "f" *->> Var "f" `call` Var "x")
+          (TInt `tlam` (TInt `tlam` TString) `tlam` TString)
+          `shouldReturn` Right ("x" *->> "f" *->> Var "f" `call` Var "x")
+        check
+          ("x" *->> "f" *->> Var "f" `call` Var "x")
+          (TString `tlam` (TInt `tlam` TString) `tlam` TString)
+          `shouldReturn` Left (unificationErrorMessage TInt TString)
+
+      it "should use inferred type when explicit type is unknown" $ do
+        check (int 5) TUnknown `shouldReturn` Right (int 5)
+        check (str "x") TUnknown `shouldReturn` Right (str "x")
+        check ("x" *->> "f" *->> Var "f" `call` Var "x") TUnknown
+          `shouldReturn` Right ("x" *->> "f" *->> Var "f" `call` Var "x")
+
     describe "Inference" $ do
       let infer = runTI . inferType Map.empty
 
