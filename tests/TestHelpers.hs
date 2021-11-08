@@ -18,3 +18,5 @@ int = Literal . LiteralInt
 str = Literal . LiteralString
 
 float = Literal . LiteralFloat
+
+bool = Literal . LiteralBool

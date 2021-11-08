@@ -11,30 +11,38 @@ import TestHelpers
 tests =
   describe "Type checker" $ do
     describe "Checker" $ do
-      let check e = runTI . checkType Map.empty e
+      let check e = runTI . checkType' Map.empty e
 
       it "should check for invalid type annotations" $ do
-        check (int 5) TInt `shouldReturn` Right (int 5)
+        check (int 5) TInt `shouldReturn` Right TInt
         check (int 5) TString
           `shouldReturn` Left (unificationErrorMessage TString TInt)
         check
           ("x" *->> "f" *->> Var "f" `call` Var "x")
           (TVar "a" `tlam` (TVar "a" `tlam` TVar "b") `tlam` TVar "b")
-          `shouldReturn` Right ("x" *->> "f" *->> Var "f" `call` Var "x")
+          `shouldReturn` Right (TVar "a" `tlam` (TVar "a" `tlam` TVar "b") `tlam` TVar "b")
         check
           ("x" *->> "f" *->> Var "f" `call` Var "x")
           (TInt `tlam` (TInt `tlam` TString) `tlam` TString)
-          `shouldReturn` Right ("x" *->> "f" *->> Var "f" `call` Var "x")
+          `shouldReturn` Right (TInt `tlam` (TInt `tlam` TString) `tlam` TString)
         check
           ("x" *->> "f" *->> Var "f" `call` Var "x")
           (TString `tlam` (TInt `tlam` TString) `tlam` TString)
           `shouldReturn` Left (unificationErrorMessage TInt TString)
 
       it "should use inferred type when explicit type is unknown" $ do
-        check (int 5) TUnknown `shouldReturn` Right (int 5)
-        check (str "x") TUnknown `shouldReturn` Right (str "x")
+        check (int 5) TUnknown `shouldReturn` Right TInt
+        check (str "x") TUnknown `shouldReturn` Right TString
         check ("x" *->> "f" *->> Var "f" `call` Var "x") TUnknown
-          `shouldReturn` Right ("x" *->> "f" *->> Var "f" `call` Var "x")
+          `shouldReturn` Right (TVar "a0" `tlam` (TVar "a0" `tlam` TVar "a2") `tlam` TVar "a2")
+
+      it "should check types for if-else" $ do
+        check (IfElse (bool True) (int 5) (int 6)) TUnknown `shouldReturn` Right TInt
+        check (IfElse (bool True) (float 5.0) (float 6.0)) TUnknown `shouldReturn` Right TFloat
+        check (IfElse (bool True) (float 5.0) (int 6)) TUnknown
+          `shouldReturn` Left (unificationErrorMessage TFloat TInt)
+        check (IfElse (int 3) (int 1) (int 1)) TUnknown
+          `shouldReturn` Left (unificationErrorMessage TBool TInt)
 
     describe "Inference" $ do
       let infer = runTI . inferType Map.empty
@@ -77,6 +85,11 @@ tests =
           infer
             ("fn" *->> "pair" *->> Var "pair" `call` (Var "fn" `call` str "val") `call` (Var "fn" `call` int 5))
             `shouldReturn` Left "unable to unify types: TString and TInt"
+
+      describe "ifElse conditions" $ do
+        it "should infer types for if-else" $ do
+          infer (IfElse (bool True) (int 5) (int 6)) `shouldReturn` Right TInt
+          infer (IfElse (bool True) (float 5) (float 6)) `shouldReturn` Right TFloat
 
       it "should error out for invalid variables" $ do
         infer (Var "foobar")

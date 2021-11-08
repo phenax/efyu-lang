@@ -9,8 +9,12 @@
   - [X] Test with hspec-megaparsec
   - [X] Try hpack
   - [X] Type annotations parsing
-  - [ ] Type checker
+  - [X] Type checker
   - [ ] If expression
+  - [ ] Use type annotation in type checker
+  - [ ] Type checking inside block
+  - [ ] Start with js compiler
+  - [ ] Better type error messages with loc
   - [ ] Implement recursion for type inference
   - [ ] :Fix: indentation issues (indent from reference expression not reference source character)
   - [ ] List literal + type

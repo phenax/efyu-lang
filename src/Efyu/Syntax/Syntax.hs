@@ -18,4 +18,5 @@ data Expression
   | Apply Expression Expression
   | Lambda Identifier Expression
   | TypeAnnotation Identifier Type
+  | IfElse Expression Expression Expression
   deriving (Show, Eq)

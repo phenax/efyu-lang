@@ -36,6 +36,8 @@ unify t t' = case (t, t') of
   (ty, TVar name) -> bindTypeVar name ty
   (TVar name, ty) -> bindTypeVar name ty
   (ty, ty') | ty == ty' -> pure Map.empty
+  (TUnknown, _) -> pure Map.empty
+  (_, TUnknown) -> pure Map.empty
   (TLambda p r, TLambda p' r') -> do
     st <- unify p p'
     st' <- unify (apply st r) (apply st r')
@@ -98,6 +100,7 @@ inferType' env = \case
     (stBinding, env') <- resolveBindings env bindings
     (stBody, tyBody) <- inferType' (apply stBinding env') body
     pure (stBinding `composeSubst` stBody, tyBody)
+  IfElse _cond ifE _elseE -> inferType' env ifE -- TODO: Fix laterz
   TypeAnnotation _n ty -> pure (Map.empty, ty)
 
 -- | Resolve a set of bindings to a set of type substitutions and
