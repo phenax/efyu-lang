@@ -328,6 +328,51 @@ tests = do
       tp [r|fn :: Bool -> String -> Int |] `shouldParse` TypeAnnotation "fn" (TBool `tlam` TString `tlam` TInt)
       tp [r|fn :: a -> b -> c |] `shouldParse` TypeAnnotation "fn" (TVar "a" `tlam` TVar "b" `tlam` TVar "c")
 
+  describe "if-then-else" $ do
+    it "should parse if expressions" $ do
+      p [r| if x then f x else g x |]
+        `shouldParse` IfElse
+          (Var "x")
+          (Var "f" `call` Var "x")
+          (Var "g" `call` Var "x")
+      p [r| if cond x 0 then f x 1 else g x 2 |]
+        `shouldParse` IfElse
+          (Var "cond" `call` Var "x" `call` int 0)
+          (Var "f" `call` Var "x" `call` int 1)
+          (Var "g" `call` Var "x" `call` int 2)
+      p
+        [r|
+          if cond x 0 then
+            f x 1
+          else
+            g x 2
+        |]
+        `shouldParse` IfElse
+          (Var "cond" `call` Var "x" `call` int 0)
+          (Var "f" `call` Var "x" `call` int 1)
+          (Var "g" `call` Var "x" `call` int 2)
+      p
+        [r|
+          let
+            cond = if test then
+                    f 1
+                  else
+                    g 2
+            in
+              if cond 1 then
+                1
+              else 2
+        |]
+        `shouldParse` Let
+          [ ( "cond",
+              IfElse
+                (Var "test")
+                (Var "f" `call` int 1)
+                (Var "g" `call` int 2)
+            )
+          ]
+          (IfElse (Var "cond" `call` int 1) (int 1) (int 2))
+
 --
 --
 --
