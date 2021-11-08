@@ -44,6 +44,24 @@ tests =
         check (IfElse (int 3) (int 1) (int 1)) TUnknown
           `shouldReturn` Left (unificationErrorMessage TBool TInt)
 
+      describe "recursive functions" $ do
+        fit "should infer types of recursive functions" $ do
+          let recursiveExpr =
+                Let
+                  [ ("gte", "x" *->> "y" *->> bool True),
+                    ("sub", "x" *->> "y" *->> int 2),
+                    ( "fact",
+                      "x"
+                        *->> IfElse
+                          (Var "gte" `call` Var "x" `call` int 1)
+                          (Var "fact" `call` (Var "sub" `call` Var "x" `call` int 1))
+                          (int 1)
+                    )
+                  ]
+                  (Var "fact" `call` int 5)
+          check recursiveExpr TInt `shouldReturn` Right TInt
+          check recursiveExpr TString `shouldReturn` Left (unificationErrorMessage TString TInt)
+
     describe "Inference" $ do
       let infer = runTI . inferType Map.empty
 

@@ -25,7 +25,7 @@ composeSubst :: TypeSubst -> TypeSubst -> TypeSubst
 composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1
 
 -- Polymorphic set of vars (forall a, b, c. Type)
-data TypeScheme = TypeScheme [String] Type
+data TypeScheme = TypeScheme [String] Type deriving (Show)
 
 -- type definitions map (name -> scheme)
 type TypeEnv = Map.Map String TypeScheme

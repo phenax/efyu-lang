@@ -11,11 +11,13 @@
   - [X] Type annotations parsing
   - [X] Type checker
   - [X] If expression
-  - [ ] Start with js compiler
+  - [X] Start with js compiler
   - [ ] Use type annotation in type checker
   - [ ] Type checking inside block
   - [ ] Better type error messages with loc
-  - [ ] Implement recursion for type inference
+  - [X] Implement recursion for type inference
+  - [ ] Transform ast to target friendly ast
+  - [ ] optimizer step for compiler
   - [ ] :Fix: indentation issues (indent from reference expression not reference source character)
   - [ ] List literal + type
   - [ ] :Fix: Type annotation indentation issue

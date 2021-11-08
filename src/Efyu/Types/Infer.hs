@@ -8,6 +8,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Efyu.Syntax.Syntax
 import Efyu.Types.Types
+import Efyu.Utils (debugM)
 
 data TIEnv = TIEnv {}
 
@@ -100,7 +101,12 @@ inferType' env = \case
     (stBinding, env') <- resolveBindings env bindings
     (stBody, tyBody) <- inferType' (apply stBinding env') body
     pure (stBinding `composeSubst` stBody, tyBody)
-  IfElse _cond ifE _elseE -> inferType' env ifE -- TODO: Fix laterz
+  IfElse _cond ifE elseE -> do
+    (ifSt, ifT) <- inferType' env ifE
+    (elseSt, elseT) <- inferType' env elseE
+    subst <- unify ifT elseT
+    let subst' = ifSt `Map.union` elseSt `Map.union` subst
+    pure (Map.empty, apply subst' ifT)
   TypeAnnotation _n ty -> pure (Map.empty, ty)
 
 -- | Resolve a set of bindings to a set of type substitutions and
@@ -108,12 +114,18 @@ resolveBindings :: TypeEnv -> [(Identifier, Expression)] -> TI (TypeSubst, TypeE
 resolveBindings env = foldM getSubstEnv (Map.empty, env)
   where
     getSubstEnv (st, env') (name, expr) = do
-      (stBinding, tyBinding) <- inferType' env' expr
-      let ty' = generalize (apply stBinding env') tyBinding
-      let tyName = case expr of
-            TypeAnnotation n _ -> n
-            _ -> name
-      pure (Map.union st stBinding, Map.insert tyName ty' env')
+      -- Create a temporary scheme (needed for recursive definitions)
+      tmpTypeScheme <- generalize (apply st env') <$> newTypeVar "t"
+      let tmpEnv = Map.insert name tmpTypeScheme env'
+
+      -- Infer type using tmpEnv
+      (stBinding, tyBinding) <- inferType' tmpEnv expr
+      let properTypeScheme = generalize (apply st tmpEnv) tyBinding
+      let properEnv = Map.insert name properTypeScheme env'
+      debugM tyBinding
+
+      -- let tyName = case expr of TypeAnnotation n _ -> n; _ -> name
+      pure (st `Map.union` stBinding, properEnv)
 
 inferType :: TypeEnv -> Expression -> TI Type
 inferType env expr = do
