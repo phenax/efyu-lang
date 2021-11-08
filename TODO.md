@@ -11,9 +11,9 @@
   - [X] Type annotations parsing
   - [X] Type checker
   - [X] If expression
+  - [ ] Start with js compiler
   - [ ] Use type annotation in type checker
   - [ ] Type checking inside block
-  - [ ] Start with js compiler
   - [ ] Better type error messages with loc
   - [ ] Implement recursion for type inference
   - [ ] :Fix: indentation issues (indent from reference expression not reference source character)

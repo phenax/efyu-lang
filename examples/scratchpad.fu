@@ -5,22 +5,16 @@
 
 id x = x
 
--- TODO: Replace after adding if expression
-true a b x = a x
-false a b x = b x
-
--- type Bool' = (x -> a) -> (x -> a) -> x -> a
--- lt :: Int -> Int -> Bool'
-
--- TODO: Fix extra indent issue
-fibo n = lt n 1
-          (\n -> 1)
-          (\n -> add (fibo (sub n 1)) (fibo (sub n 2)))
+fibo n =
+  if (lte n 1) then
+    1
+  else
+    add (fibo (sub n 1)) (fibo (sub n 2))
 
 main =
   let
-      n = 5
-      result = fibo n
-    in id result
+    n = 5
+    result = fibo n
+  in id result
 
 --
