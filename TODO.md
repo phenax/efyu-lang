@@ -10,7 +10,7 @@
   - [X] Try hpack
   - [X] Type annotations parsing
   - [X] Type checker
-  - [ ] If expression
+  - [X] If expression
   - [ ] Use type annotation in type checker
   - [ ] Type checking inside block
   - [ ] Start with js compiler

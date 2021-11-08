@@ -65,3 +65,16 @@ withLineFold = L.lineFold scnl
 
 nonIndented :: MParser a -> MParser a
 nonIndented = L.nonIndented scnl
+
+indentLevel :: MParser (Pos, MParser ())
+indentLevel = (,scnl) <$> L.indentLevel
+
+indentGt :: (Pos, MParser ()) -> MParser ()
+indentGt (pos, sp) =
+  L.indentGuard scnl GT pos >> sp
+
+indentGtEq :: (Pos, MParser ()) -> MParser ()
+indentGtEq p@(pos, sp) =
+  try (indentGt p) <|> (L.indentGuard scnl EQ pos >> sp)
+
+---

@@ -85,13 +85,29 @@ tests = do
             )
           ]
           (Var "x")
-      p -- TODO: This is incorrect behavior fix later
+      p
+        [r|
+        let
+          x =
+            let
+              y = 200.0
+            in y
+        in x |]
+        `shouldParse` Let
+          [ ( "x",
+              Let
+                [("y", float 200.0)]
+                (Var "y")
+            )
+          ]
+          (Var "x")
+      p
         [r|
         let
           x = let
                 y = 200.0
-            in y
-          in x |]
+              in y
+        in x |]
         `shouldParse` Let
           [ ( "x",
               Let
@@ -172,6 +188,11 @@ tests = do
         `shouldFailOn` [r|
           let x = 200.; in
           x |]
+      p
+        `shouldFailOn` [r|
+          let
+            x = 200.
+        in x |]
 
   describe "lambda expression" $ do
     it "should parse simple lambda" $ do
@@ -187,7 +208,7 @@ tests = do
         let
           fn =
             \x -> mul x 5
-         in fn 5
+        in fn 5
         |]
         `shouldParse` Let
           [("fn", "x" *->> Var "mul" `call` Var "x" `call` int 5)]
@@ -198,7 +219,7 @@ tests = do
         let
           fn x =
             mul x 5
-         in fn 5
+        in fn 5
         |]
         `shouldParse` Let
           [("fn", "x" *->> Var "mul" `call` Var "x" `call` int 5)]

@@ -1,7 +1,6 @@
 module Efyu.Syntax.Expression where
 
 import Data.Foldable (Foldable (foldr'))
-import Data.Functor (void)
 import Data.List (foldl')
 import Efyu.Syntax.Syntax
 import Efyu.Syntax.Type (typeAnnotationP)
@@ -36,10 +35,11 @@ definitionP = try defP <|> (("_",) <$> typeAnnotationP)
       pure (name, foldr' Lambda body params)
 
 letBindingP :: MParser Expression
-letBindingP = withLineFold $ \sp -> do
-  L.symbol sp "let"
-  vars <- (definitionP <* scnl) `someTill` L.symbol sp "in"
-  Let vars <$> expressionP
+letBindingP = do
+  pos <- indentLevel
+  symbol "let"
+  vars <- (indentGt pos >> definitionP <* scnl) `someTill` (indentGtEq pos >> symbol "in")
+  Let vars <$> (indentGt pos >> expressionP)
 
 lambdaP :: MParser Expression
 lambdaP = withLineFold $ \sp -> do
@@ -62,19 +62,9 @@ applyP = withLineFold $ \sp -> do
         Nothing -> pure ls
         Just p -> argListParser sp $ ls ++ [p]
 
-indentGtEq :: Pos -> MParser ()
-indentGtEq pos = do
-  void $ try (L.indentGuard scnl EQ pos) <|> L.indentGuard scnl GT pos
-  scnl
-
-indentGt :: Pos -> MParser ()
-indentGt pos = do
-  void $ L.indentGuard scnl GT pos
-  scnl
-
 ifThenElseP :: MParser Expression
 ifThenElseP = do
-  pos <- L.indentLevel
+  pos <- indentLevel
   symbol "if"
   condE <- indentGt pos >> expressionP
   symbol "then"
