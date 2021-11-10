@@ -77,18 +77,18 @@ inferLiteralType = \case
   LiteralBool _ -> TBool
   LiteralFloat _ -> TFloat
 
-inferType' :: TypeEnv -> Expression -> TI (TypeSubst, Type)
-inferType' env = \case
+inferExpressionType' :: TypeEnv -> Expression -> TI (TypeSubst, Type)
+inferExpressionType' env = \case
   Literal lit -> pure (Map.empty, inferLiteralType lit)
   Lambda param body -> do
     tv <- newTypeVar "a"
     let env' = Map.insert param (TypeScheme [] tv) env
-    (bodySubst, bodyType) <- inferType' env' body
+    (bodySubst, bodyType) <- inferExpressionType' env' body
     pure (bodySubst, TLambda (apply bodySubst tv) bodyType)
   Apply lambda param -> do
     typeVar <- newTypeVar "a"
-    (sl, tl) <- inferType' env lambda
-    (sp, tp) <- inferType' (apply sl env) param
+    (sl, tl) <- inferExpressionType' env lambda
+    (sp, tp) <- inferExpressionType' (apply sl env) param
     sres <- unify (apply sp tl) (TLambda tp typeVar)
     pure (sres `composeSubst` sp `composeSubst` sl, apply sres typeVar)
   Var name ->
@@ -99,11 +99,11 @@ inferType' env = \case
         pure (Map.empty, ty)
   Let bindings body -> do
     (stBinding, env') <- resolveBindings env bindings
-    (stBody, tyBody) <- inferType' (apply stBinding env') body
+    (stBody, tyBody) <- inferExpressionType' (apply stBinding env') body
     pure (stBinding `composeSubst` stBody, tyBody)
   IfElse _cond ifE elseE -> do
-    (ifSt, ifT) <- inferType' env ifE
-    (elseSt, elseT) <- inferType' env elseE
+    (ifSt, ifT) <- inferExpressionType' env ifE
+    (elseSt, elseT) <- inferExpressionType' env elseE
     subst <- unify ifT elseT
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
     pure (Map.empty, apply subst' ifT)
@@ -119,7 +119,7 @@ resolveBindings env = foldM getSubstEnv (Map.empty, env)
       let tmpEnv = Map.insert name tmpTypeScheme env'
 
       -- Infer type using tmpEnv
-      (stBinding, tyBinding) <- inferType' tmpEnv expr
+      (stBinding, tyBinding) <- inferExpressionType' tmpEnv expr
       let properTypeScheme = generalize (apply st tmpEnv) tyBinding
       let properEnv = Map.insert name properTypeScheme env'
       debugM tyBinding
@@ -127,9 +127,9 @@ resolveBindings env = foldM getSubstEnv (Map.empty, env)
       -- let tyName = case expr of TypeAnnotation n _ -> n; _ -> name
       pure (st `Map.union` stBinding, properEnv)
 
-inferType :: TypeEnv -> Expression -> TI Type
-inferType env expr = do
-  (subst, ty) <- inferType' env expr
+inferExpressionType :: TypeEnv -> Expression -> TI Type
+inferExpressionType env expr = do
+  (subst, ty) <- inferExpressionType' env expr
   pure $ apply subst ty
 
 ---

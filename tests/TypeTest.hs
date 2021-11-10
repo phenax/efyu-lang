@@ -11,7 +11,7 @@ import TestHelpers
 tests =
   describe "Type checker" $ do
     describe "Checker" $ do
-      let check e = runTI . checkType' Map.empty e
+      let check e = runTI . checkExpressionType' Map.empty e
 
       it "should check for invalid type annotations" $ do
         check (int 5) TInt `shouldReturn` Right TInt
@@ -63,7 +63,7 @@ tests =
           check recursiveExpr TString `shouldReturn` Left (unificationErrorMessage TString TInt)
 
     describe "Inference" $ do
-      let infer = runTI . inferType Map.empty
+      let infer = runTI . inferExpressionType Map.empty
 
       describe "literals" $ do
         it "should infer literal types" $ do

@@ -4,19 +4,19 @@ import Efyu.Syntax.Syntax
 import Efyu.Types.Infer
 import Efyu.Types.Types
 
-checkType :: TypeEnv -> Expression -> Type -> TI (Type, Expression)
-checkType env expr@(IfElse cond _ _) ty = do
-  checkType env cond TBool
-  ty' <- inferType env expr
+checkExpressionType :: TypeEnv -> Expression -> Type -> TI (Type, Expression)
+checkExpressionType env expr@(IfElse cond _ _) ty = do
+  checkExpressionType env cond TBool
+  ty' <- inferExpressionType env expr
   unify ty ty'
   pure (ty, expr)
-checkType env expr TUnknown = (,expr) <$> inferType env expr
-checkType env expr ty = do
-  ty' <- inferType env expr
+checkExpressionType env expr TUnknown = (,expr) <$> inferExpressionType env expr
+checkExpressionType env expr ty = do
+  ty' <- inferExpressionType env expr
   unify ty ty'
   pure (ty, expr)
 
-checkType' :: TypeEnv -> Expression -> Type -> TI Type
-checkType' env expr ty = fst <$> checkType env expr ty
+checkExpressionType' :: TypeEnv -> Expression -> Type -> TI Type
+checkExpressionType' env expr ty = fst <$> checkExpressionType env expr ty
 
 ---

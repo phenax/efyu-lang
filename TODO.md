@@ -12,11 +12,15 @@
   - [X] Type checker
   - [X] If expression
   - [X] Start with js compiler
+  - [X] Implement recursion for type inference
   - [ ] Use type annotation in type checker
   - [ ] Type checking inside block
   - [ ] Better type error messages with loc
-  - [X] Implement recursion for type inference
   - [ ] Transform ast to target friendly ast
+  - [ ] Custom types - alias
+  - [ ] Custom types - adt (constructors)
+  - [ ] Custom types - type classes/instances?
+  - [ ] Custom types - records (define as product types with lenses)
   - [ ] optimizer step for compiler
   - [ ] :Fix: indentation issues (indent from reference expression not reference source character)
   - [ ] List literal + type
