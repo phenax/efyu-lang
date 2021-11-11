@@ -36,8 +36,7 @@ tests =
         check ("x" *->> "f" *->> Var "f" `call` Var "x") TUnknown
           `shouldReturn` Right (TVar "a0" `tlam` (TVar "a0" `tlam` TVar "a2") `tlam` TVar "a2")
 
-      -- TODO: Fix this case
-      xit "should check types for if-else" $ do
+      it "should check types for if-else" $ do
         check (IfElse (bool True) (int 5) (int 6)) TUnknown `shouldReturn` Right TInt
         check (IfElse (bool True) (float 5.0) (float 6.0)) TUnknown `shouldReturn` Right TFloat
         check (IfElse (bool True) (float 5.0) (int 6)) TUnknown
@@ -128,15 +127,7 @@ tests =
           )
           `shouldReturn` Right TInt
 
-      it "should create substitutions from type annotations" $ do
-        -- infer
-        --   ( Let
-        --       [ ("_", TypeAnnotation "name" TString),
-        --         ("name", int 5)
-        --       ]
-        --       (Var "name")
-        --   )
-        --   `shouldReturn` Right TString
+      it "should infer type annotation (probably useless)" $ do
         infer (TypeAnnotation "name" TInt) `shouldReturn` Right TInt
 
 ---

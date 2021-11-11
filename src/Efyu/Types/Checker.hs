@@ -11,12 +11,12 @@ checkExpressionType env expr@(IfElse cond _ _) ty = do
   checkExpressionType env cond TBool
   ty' <- inferExpressionType env expr
   unify ty ty'
-  pure (ty, expr)
+  pure (higherSp ty ty', expr)
 checkExpressionType env expr TUnknown = (,expr) <$> inferExpressionType env expr
 checkExpressionType env expr ty = do
   ty' <- inferExpressionType env expr
   unify ty ty'
-  pure (ty, expr)
+  pure (higherSp ty ty', expr)
 
 checkExpressionType' :: TypeEnv -> Expression -> Type -> TI Type
 checkExpressionType' env expr ty = fst <$> checkExpressionType env expr ty

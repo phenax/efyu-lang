@@ -106,7 +106,7 @@ inferExpressionType' env = \case
     (elseSt, elseT) <- inferExpressionType' env elseE
     subst <- unify ifT elseT
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
-    pure (Map.empty, apply subst' ifT)
+    pure (Map.empty, apply subst' $ higherSp ifT elseT)
   TypeAnnotation _n ty -> pure (Map.empty, ty)
 
 -- | Resolve a set of bindings to a set of type substitutions and
