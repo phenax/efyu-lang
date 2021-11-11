@@ -1,4 +1,5 @@
 module Efyu.Compiler.Codegen where
 
-newtype CodegenTargets
+data CodegenTargets
   = JavaScript Bool
+  | Wasm

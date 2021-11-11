@@ -13,25 +13,41 @@
   - [X] If expression
   - [X] Start with js compiler
   - [X] Implement recursion for type inference
+  - [X] Type checking inside block
   - [ ] Use type annotation in type checker
-  - [ ] Type checking inside block
-  - [ ] Better type error messages with loc
-  - [ ] Transform ast to target friendly ast
-  - [ ] Custom types - alias
-  - [ ] Custom types - adt (constructors)
-  - [ ] Custom types - type classes/instances?
-  - [ ] Custom types - records (define as product types with lenses)
-  - [ ] optimizer step for compiler
-  - [ ] :Fix: indentation issues (indent from reference expression not reference source character)
   - [ ] List literal + type
-  - [ ] :Fix: Type annotation indentation issue
   - [ ] Tuple literal + type
-  - [ ] Nested module parser
-  - [ ] Infix operators
-  - [ ] Compile to js
   - [ ] Effects system
-  - [ ] Look into pattern matching
+  - [ ] Nested module parser
+  - [ ] Types for modules?
+  - [ ] Stdlib
 
-# Maybe
+## Bugs
+  - [ ] :error-message: Better type error messages with loc
+  - [ ] :indent: indentation issues (indent from reference expression not reference source character)
+  - [ ] :indent: Type annotation indentation issue
+
+## Custom types
+  - [ ] aliases
+  - [ ] adt (constructors)
+  - [ ] type classes/instances?
+  - [ ] records (define as product types with get/set)
+
+## Compiler
+  - [ ] Transform ast to target friendly ast
+  - [ ] Compile to js
+  - [ ] Compile to wasm
+  - [ ] optimizer
+
+## Infix operators
+  - [ ] infix operators for arithmetics
+  - [ ] infix operators for lists
+  - [ ] infix operators for functions
   - [ ] Custom infix operators?
+
+## Pattern matching
+  - [ ] Look into pattern matching
+  - [ ] Type inference from patterns
+  - [ ] Replace let, lambda parameter parser with patterns
+  - [ ] Compiler runtime for patterns
 
