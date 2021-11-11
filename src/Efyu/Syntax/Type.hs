@@ -30,5 +30,5 @@ typeP sp = try (tLambdaP sp) <?> "<type>"
 typeAnnotationP :: MParser Expression
 typeAnnotationP = withLineFold $ \sp -> do
   name <- identifier <* sp
-  L.symbol sp "::"
+  L.symbol sp ":"
   TypeAnnotation name <$> (typeP sp <* sc)

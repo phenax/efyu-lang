@@ -76,7 +76,7 @@ dummy = 2
     it "should parse definitions along with annotations" $ do
       parse
         [r|
-num :: Int
+num : Int
 num = 20
 |]
         `shouldParse` Module
@@ -86,10 +86,10 @@ num = 20
           ]
       parse
         [r|
-ello :: Int
+ello : Int
 ello = 20
 
-num :: Int -> String -> Bool
+num : Int -> String -> Bool
 num a b = c
 |]
         `shouldParse` Module

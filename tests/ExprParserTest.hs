@@ -308,7 +308,7 @@ tests = do
       p
         [r|
         let
-            foo :: Int -> String
+            foo : Int -> String
             foo x = show x
           in foo 5
         |]
@@ -321,9 +321,9 @@ tests = do
       p
         [r|
         let
-            foo :: Int -> String
+            foo : Int -> String
             foo x = show x
-            foo1 ::
+            foo1 :
               Int ->
               Int
             foo1 x = 1
@@ -340,14 +340,14 @@ tests = do
   describe "typeAnnotationP > type annotations" $ do
     let tp = MP.parse (typeAnnotationP <* eof) "type.fu"
     it "should parse primitive types" $ do
-      tp [r|name :: String |] `shouldParse` TypeAnnotation "name" TString
-      tp [r|name :: Int |] `shouldParse` TypeAnnotation "name" TInt
-      tp [r|name :: Bool |] `shouldParse` TypeAnnotation "name" TBool
-      tp [r|name :: Float|] `shouldParse` TypeAnnotation "name" TFloat
+      tp [r|name : String |] `shouldParse` TypeAnnotation "name" TString
+      tp [r|name : Int |] `shouldParse` TypeAnnotation "name" TInt
+      tp [r|name : Bool |] `shouldParse` TypeAnnotation "name" TBool
+      tp [r|name : Float|] `shouldParse` TypeAnnotation "name" TFloat
     it "should parse lambda types" $ do
-      tp [r|fn :: String -> Int |] `shouldParse` TypeAnnotation "fn" (TString `tlam` TInt)
-      tp [r|fn :: Bool -> String -> Int |] `shouldParse` TypeAnnotation "fn" (TBool `tlam` TString `tlam` TInt)
-      tp [r|fn :: a -> b -> c |] `shouldParse` TypeAnnotation "fn" (TVar "a" `tlam` TVar "b" `tlam` TVar "c")
+      tp [r|fn : String -> Int |] `shouldParse` TypeAnnotation "fn" (TString `tlam` TInt)
+      tp [r|fn: Bool -> String -> Int |] `shouldParse` TypeAnnotation "fn" (TBool `tlam` TString `tlam` TInt)
+      tp [r|fn: a -> b -> c |] `shouldParse` TypeAnnotation "fn" (TVar "a" `tlam` TVar "b" `tlam` TVar "c")
 
   describe "if-then-else" $ do
     it "should parse if expressions" $ do

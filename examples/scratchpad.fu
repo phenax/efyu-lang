@@ -5,6 +5,8 @@
 
 id x = x
 
+fibo : Int -> Int
+
 fibo n =
   if (lte n 1) then
     1
