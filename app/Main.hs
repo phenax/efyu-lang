@@ -1,12 +1,10 @@
 module Main where
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Efyu.Compiler (compileBlock)
 import Efyu.Syntax.Parse (parseFile)
 import Efyu.Types.Infer (checkModule, runTI)
 import Text.Megaparsec.Error (errorBundlePretty)
-
--- import Text.Pretty.Simple (pPrint)
+import Text.Pretty.Simple (pPrint)
 
 main = do
   ast <- parseFile "./examples/scratchpad.fu"
@@ -16,4 +14,4 @@ main = do
       res <- liftIO . runTI . checkModule $ r
       case res of
         Left e -> putStrLn e
-        Right _ -> putStrLn . compileBlock $ r
+        Right _ -> pPrint r

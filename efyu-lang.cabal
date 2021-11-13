@@ -15,7 +15,6 @@ build-type:     Simple
 library
   exposed-modules:
       Efyu
-      Efyu.Compiler
       Efyu.Compiler.Codegen
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
@@ -50,7 +49,6 @@ executable efyu
   main-is: Main.hs
   other-modules:
       Efyu
-      Efyu.Compiler
       Efyu.Compiler.Codegen
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
@@ -90,7 +88,6 @@ test-suite efyu-test
       TestHelpers
       TypeTest
       Efyu
-      Efyu.Compiler
       Efyu.Compiler.Codegen
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
