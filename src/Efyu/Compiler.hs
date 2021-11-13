@@ -21,6 +21,7 @@ compileLiteral = \case
   LiteralInt n -> show n
   LiteralFloat n -> show n
   LiteralBool b -> if b then "true" else "false"
+  LiteralList exprs -> between "[" "]" . intercalate "," . map compileExpression $ exprs
 
 compileExpression :: Expression -> String
 compileExpression = \case

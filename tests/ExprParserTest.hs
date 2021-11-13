@@ -30,6 +30,35 @@ tests = do
       p [r|20.|] `shouldParse` Literal (LiteralFloat 20.0)
       p [r|-20.05|] `shouldParse` Literal (LiteralFloat (-20.05))
       p [r|-20.|] `shouldParse` Literal (LiteralFloat (-20.0))
+    it "should parse literal list expressions" $ do
+      p [r|[1]|] `shouldParse` Literal (LiteralList [int 1])
+      p [r|[ 1,  2,3   ,4 ]|] `shouldParse` Literal (LiteralList [int 1, int 2, int 3, int 4])
+      p [r|[ 1, "ww" ,4 ]|] `shouldParse` Literal (LiteralList [int 1, str "ww", int 4])
+      p
+        [r|
+          [
+            foo,
+            bar,
+          ]
+        |]
+        `shouldParse` Literal (LiteralList [Var "foo", Var "bar"])
+      p
+        [r|
+          [
+            let
+              x = 1
+            in x,
+            5,
+          ]
+        |]
+        `shouldParse` Literal (LiteralList [Let [DefValue "x" $ int 1] (Var "x"), int 5])
+      p
+        `shouldFailOn` [r|
+          [
+            foo,
+          bar,
+          ]
+        |]
 
   describe "variables" $ do
     it "should parse alphanumeric identifiers" $ do
