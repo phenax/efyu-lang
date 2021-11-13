@@ -1,12 +1,22 @@
-module Efyu.Syntax.Syntax where
+module Efyu.Types where
 
-import Efyu.Types.Types (Type)
+data Type
+  = TLambda Type Type
+  | TInt
+  | TString
+  | TFloat
+  | TBool
+  | TVar String
+  | TList [Expression]
+  | TUnknown
+  deriving (Show, Eq)
 
 data Literal
   = LiteralString String
   | LiteralInt Integer
   | LiteralFloat Double
   | LiteralBool Bool
+  --- | LiteralList [Expression]
   deriving (Show, Eq)
 
 type Identifier = String

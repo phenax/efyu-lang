@@ -1,8 +1,7 @@
 module Efyu.Syntax.Type where
 
-import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
-import Efyu.Types.Types
+import Efyu.Types
 import Text.Megaparsec
 import qualified Text.Megaparsec.Char.Lexer as L
 

@@ -8,8 +8,8 @@ import Data.List (sortBy)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Efyu.Syntax.Block
-import Efyu.Syntax.Syntax
-import Efyu.Types.Types
+import Efyu.Types
+import Efyu.Types.Utils
 
 data TIEnv = TIEnv {}
 
@@ -76,16 +76,16 @@ generalize env t = flip TypeScheme t . Set.toList $ freeTypes
     freeTypes = Set.difference (freeTypeVars t) (freeTypeVars env)
 
 -- | Infer types of literals
-inferLiteralType :: Literal -> Type
-inferLiteralType = \case
-  LiteralInt _ -> TInt
-  LiteralString _ -> TString
-  LiteralBool _ -> TBool
-  LiteralFloat _ -> TFloat
+inferLiteralType :: TypeEnv -> Literal -> TI Type
+inferLiteralType env = \case
+  LiteralInt _ -> pure TInt
+  LiteralString _ -> pure TString
+  LiteralBool _ -> pure TBool
+  LiteralFloat _ -> pure TFloat
 
 inferExpressionType' :: TypeEnv -> Expression -> TI (TypeSubst, Type)
 inferExpressionType' env = \case
-  Literal lit -> pure (Map.empty, inferLiteralType lit)
+  Literal lit -> (Map.empty,) <$> inferLiteralType env lit
   Lambda param body -> do
     tv <- newTypeVar "a"
     let env' = Map.insert param (TypeScheme [] tv) env

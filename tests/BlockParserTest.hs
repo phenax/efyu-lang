@@ -1,8 +1,7 @@
 module BlockParserTest where
 
 import Efyu.Syntax.Block
-import Efyu.Syntax.Syntax
-import Efyu.Types.Types
+import Efyu.Types
 import Test.Hspec
 import Test.Hspec.Megaparsec
 import TestHelpers

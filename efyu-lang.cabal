@@ -20,9 +20,9 @@ library
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
-      Efyu.Syntax.Syntax
       Efyu.Syntax.Type
       Efyu.Syntax.Utils
+      Efyu.Types
       Efyu.Types.Infer
       Efyu.Types.Types
       Efyu.Utils
@@ -55,9 +55,9 @@ executable efyu
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
-      Efyu.Syntax.Syntax
       Efyu.Syntax.Type
       Efyu.Syntax.Utils
+      Efyu.Types
       Efyu.Types.Infer
       Efyu.Types.Types
       Efyu.Utils
@@ -95,9 +95,9 @@ test-suite efyu-test
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
-      Efyu.Syntax.Syntax
       Efyu.Syntax.Type
       Efyu.Syntax.Utils
+      Efyu.Types
       Efyu.Types.Infer
       Efyu.Types.Types
       Efyu.Utils

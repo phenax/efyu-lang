@@ -1,19 +1,10 @@
-module Efyu.Types.Types where
+module Efyu.Types.Utils where
 
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
+import Efyu.Types
 import Efyu.Utils (mapDeleteKeys)
-
-data Type
-  = TLambda Type Type
-  | TInt
-  | TString
-  | TFloat
-  | TBool
-  | TVar String
-  | TUnknown
-  deriving (Show, Eq)
 
 -- type variable names
 type TypeVars = Set.Set String

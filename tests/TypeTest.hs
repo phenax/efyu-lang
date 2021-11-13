@@ -1,9 +1,8 @@
 module TypeTest where
 
 import qualified Data.Map as Map
-import Efyu.Syntax.Syntax
+import Efyu.Types
 import Efyu.Types.Infer
-import Efyu.Types.Types
 import Test.Hspec
 import TestHelpers
 

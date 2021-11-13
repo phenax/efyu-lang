@@ -1,8 +1,8 @@
 module Efyu.Syntax.Block where
 
 import Efyu.Syntax.Expression
-import Efyu.Syntax.Syntax
 import Efyu.Syntax.Utils
+import Efyu.Types
 import Text.Megaparsec
 import Text.Megaparsec.Char
 

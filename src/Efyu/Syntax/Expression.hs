@@ -2,9 +2,9 @@ module Efyu.Syntax.Expression where
 
 import Data.Foldable (Foldable (foldr'))
 import Data.List (foldl')
-import Efyu.Syntax.Syntax
 import Efyu.Syntax.Type (typeAnnotationP)
 import Efyu.Syntax.Utils
+import Efyu.Types
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L

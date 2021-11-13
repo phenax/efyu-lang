@@ -2,7 +2,7 @@ module Efyu.Compiler where
 
 import Data.List (intercalate)
 import Efyu.Syntax.Block
-import Efyu.Syntax.Syntax
+import Efyu.Types
 
 between cs ce x = cs ++ x ++ ce
 

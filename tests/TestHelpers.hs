@@ -1,7 +1,6 @@
 module TestHelpers where
 
-import Efyu.Syntax.Syntax
-import Efyu.Types.Types
+import Efyu.Types
 
 (*->>) = Lambda
 
