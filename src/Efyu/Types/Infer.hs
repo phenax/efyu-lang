@@ -1,6 +1,6 @@
 module Efyu.Types.Infer where
 
-import Control.Monad (foldM)
+import Control.Monad (foldM, void)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.State
@@ -109,9 +109,9 @@ inferExpressionType' env = \case
         ty <- instantiate scheme
         pure (Map.empty, ty)
   Let bindings body -> do
-    (stBinding, env') <- resolveBindings env bindings
-    (stBody, tyBody) <- inferExpressionType' (apply stBinding env') body
-    pure (stBinding `composeSubst` stBody, tyBody)
+    (stDefs, env') <- resolveDefinitionList env bindings
+    (stBody, tyBody) <- inferExpressionType' (apply stDefs env') body
+    pure (stDefs `composeSubst` stBody, tyBody)
   IfElse cond ifE elseE -> do
     (_, condT) <- inferExpressionType' env cond
     unify condT TBool -- Check if condition is boolean
@@ -121,35 +121,36 @@ inferExpressionType' env = \case
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
     pure (Map.empty, apply subst' $ higherSp ifT elseT)
 
+resolveDefinition :: TypeEnv -> TypeSubst -> Definition -> TI (TypeSubst, TypeEnv)
+resolveDefinition env st = \case
+  (DefSignature name ty) -> do
+    let tsch = TypeScheme (Set.toList . freeTypeVars $ ty) ty
+    pure (st, Map.insert name tsch env)
+  (DefValue name expr) -> do
+    -- Create a temporary scheme (needed for recursive definitions)
+    typeDefn <- case Map.lookup name env of
+      Just ty' -> instantiate ty'
+      Nothing -> pure TUnknown
+
+    tmpTypeScheme <- generalize (apply st env) <$> newTypeVar "t"
+    let tmpEnv = Map.insert name tmpTypeScheme env
+
+    -- Infer type using tmpEnv
+    (stBinding, tyBinding) <- inferExpressionType' tmpEnv expr
+    unify typeDefn tyBinding -- Check if previous definition (signature) matches inferred type
+    let properTypeScheme = generalize (apply st tmpEnv) (higherSp typeDefn tyBinding)
+    let properEnv = Map.insert name properTypeScheme env
+
+    pure (st `Map.union` stBinding, properEnv)
+
 -- | Resolve a set of bindings to a set of type substitutions and
-resolveBindings :: TypeEnv -> [Definition] -> TI (TypeSubst, TypeEnv)
-resolveBindings env = foldM getSubstEnv (Map.empty, env) . sortBy cmpDefinition
+resolveDefinitionList :: TypeEnv -> [Definition] -> TI (TypeSubst, TypeEnv)
+resolveDefinitionList env = foldM getSubstEnv (Map.empty, env) . sortBy cmpDefinition
   where
+    getSubstEnv (st, env') def = resolveDefinition env' st def
     cmpDefinition (DefSignature _ _) _ = LT
     cmpDefinition _ (DefSignature _ _) = GT
     cmpDefinition _ _ = EQ
-
-    getSubstEnv :: (TypeSubst, TypeEnv) -> Definition -> TI (TypeSubst, TypeEnv)
-    getSubstEnv (st, env') (DefSignature name ty) = do
-      -- Insert definition into env
-      let tsch = TypeScheme (Set.toList . freeTypeVars $ ty) ty
-      pure (st, Map.insert name tsch env')
-    getSubstEnv (st, env') (DefValue name expr) = do
-      -- Create a temporary scheme (needed for recursive definitions)
-      typeDefn <- case Map.lookup name env' of
-        Just ty' -> instantiate ty'
-        Nothing -> pure TUnknown
-
-      tmpTypeScheme <- generalize (apply st env') <$> newTypeVar "t"
-      let tmpEnv = Map.insert name tmpTypeScheme env'
-
-      -- Infer type using tmpEnv
-      (stBinding, tyBinding) <- inferExpressionType' tmpEnv expr
-      unify typeDefn tyBinding -- Check if previous definition (signature) matches inferred type
-      let properTypeScheme = generalize (apply st tmpEnv) (higherSp typeDefn tyBinding)
-      let properEnv = Map.insert name properTypeScheme env'
-
-      pure (st `Map.union` stBinding, properEnv)
 
 inferExpressionType :: TypeEnv -> Expression -> TI Type
 inferExpressionType env expr = do
@@ -165,12 +166,17 @@ checkExpressionType env expr ty = do
   pure (higherSp ty ty', expr)
 
 -- | Verify type signature of block
-checkBlockType :: TypeEnv -> Block -> Type -> TI (TypeEnv, Type)
-checkBlockType env (Module _ blocks) _ = foldM accBlockEnv (env, TUnknown) blocks
+checkBlockType :: TypeEnv -> Block -> Type -> TI TypeEnv
+checkBlockType env (Module _ blocks) _ = foldM accBlockEnv env blocks
   where
-    accBlockEnv (env', _) b = checkBlockType env' b TUnknown
-checkBlockType env (Def (DefValue _ expr)) ty = (env,) . fst <$> checkExpressionType env expr ty
-checkBlockType env (Def (DefSignature _ _)) _ = pure (env, TUnknown)
+    accBlockEnv env' b = checkBlockType env' b TUnknown
+checkBlockType env (Def def) _ = do
+  (st, env') <- resolveDefinition env Map.empty def
+  pure $ apply st env'
+
+-- | Type check module (module block)
+checkModule :: Block -> TI ()
+checkModule b = void $ checkBlockType Map.empty b TUnknown
 
 ---
 ---
