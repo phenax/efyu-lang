@@ -23,7 +23,6 @@ library
       Efyu.Syntax.Syntax
       Efyu.Syntax.Type
       Efyu.Syntax.Utils
-      Efyu.Types.Checker
       Efyu.Types.Infer
       Efyu.Types.Types
       Efyu.Utils
@@ -59,7 +58,6 @@ executable efyu
       Efyu.Syntax.Syntax
       Efyu.Syntax.Type
       Efyu.Syntax.Utils
-      Efyu.Types.Checker
       Efyu.Types.Infer
       Efyu.Types.Types
       Efyu.Utils
@@ -100,7 +98,6 @@ test-suite efyu-test
       Efyu.Syntax.Syntax
       Efyu.Syntax.Type
       Efyu.Syntax.Utils
-      Efyu.Types.Checker
       Efyu.Types.Infer
       Efyu.Types.Types
       Efyu.Utils

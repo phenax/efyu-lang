@@ -24,8 +24,6 @@ type TypeSubst = Map.Map String Type
 composeSubst :: TypeSubst -> TypeSubst -> TypeSubst
 composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1
 
--- TODO: Recursive for nested types
--- TODO: Prioritize concrete types over polymorphic types
 specificity :: Type -> Type -> Ordering
 specificity TUnknown _ = LT
 specificity _ TUnknown = GT

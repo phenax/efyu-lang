@@ -2,7 +2,6 @@ module TypeTest where
 
 import qualified Data.Map as Map
 import Efyu.Syntax.Syntax
-import Efyu.Types.Checker
 import Efyu.Types.Infer
 import Efyu.Types.Types
 import Test.Hspec
@@ -11,7 +10,7 @@ import TestHelpers
 tests =
   describe "Type checker" $ do
     describe "Checker" $ do
-      let check e = runTI . checkExpressionType' Map.empty e
+      let check e = runTI . fmap fst . checkExpressionType Map.empty e
 
       it "should check for invalid type annotations" $ do
         check (int 5) TInt `shouldReturn` Right TInt
@@ -42,7 +41,7 @@ tests =
         check (IfElse (bool True) (float 5.0) (int 6)) TUnknown
           `shouldReturn` Left (unificationErrorMessage TFloat TInt)
         check (IfElse (int 3) (int 1) (int 1)) TUnknown
-          `shouldReturn` Left (unificationErrorMessage TBool TInt)
+          `shouldReturn` Left (unificationErrorMessage TInt TBool)
 
       describe "recursive functions" $ do
         it "should infer types of recursive functions" $ do
@@ -125,5 +124,33 @@ tests =
               (Var "id" `call` Var "x")
           )
           `shouldReturn` Right TInt
+
+      describe "type signature" $ do
+        it "should verify type signatures match inferred types" $ do
+          infer
+            ( Let
+                [ DefSignature "id" $ TInt `tlam` TInt,
+                  DefValue "id" ("x" *->> Var "x")
+                ]
+                (Var "id")
+            )
+            `shouldReturn` Right (TInt `tlam` TInt)
+          infer
+            ( Let
+                [ DefValue "id" ("x" *->> Var "x"),
+                  DefSignature "id" $ TInt `tlam` TInt
+                ]
+                (Var "id")
+            )
+            `shouldReturn` Right (TInt `tlam` TInt)
+        it "should error out if type signature doesn't match inferred type" $ do
+          infer
+            ( Let
+                [ DefValue "id" ("x" *->> Var "x"),
+                  DefSignature "id" $ TInt `tlam` TString
+                ]
+                (Var "id")
+            )
+            `shouldReturn` Left (unificationErrorMessage TString TInt)
 
 ---
