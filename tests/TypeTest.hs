@@ -109,9 +109,9 @@ tests =
 
       it "should error out for invalid variables" $ do
         infer (Var "foobar")
-          `shouldReturn` Left "Unbound variable foobar"
+          `shouldReturn` Left (unboundVarErrorMessage "foobar")
         infer ("x" *->> Var "x1")
-          `shouldReturn` Left "Unbound variable x1"
+          `shouldReturn` Left (unboundVarErrorMessage "x1")
 
       it "should infer types from let bindings" $ do
         infer (Let [DefValue "x" (Literal . LiteralInt $ 200)] (Var "x"))

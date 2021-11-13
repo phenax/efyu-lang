@@ -15,8 +15,15 @@ data TIEnv = TIEnv {}
 
 type TI = StateT Int (ExceptT String IO)
 
+unificationErrorMessage :: Type -> Type -> String
 unificationErrorMessage t1 t2 =
   "unable to unify types: " ++ show t1 ++ " and " ++ show t2
+
+unboundVarErrorMessage :: String -> String
+unboundVarErrorMessage name = "reference to unbound variable: " ++ name
+
+occursCheckErrorMessage :: String -> String
+occursCheckErrorMessage name = "occur check failed: Type var " ++ name ++ " already exists"
 
 runTI :: TI a -> IO (Either String a)
 runTI t = do
@@ -47,14 +54,12 @@ unify t t' = case (t, t') of
   (ty, ty') ->
     lift . throwE $ unificationErrorMessage ty ty'
   where
-    -- bind a type variable to a type
-    -- if it's the same type variable, no substitutions
-    -- if a var with the same name is found inside ty, throw error
-    -- else substitute name with ty
     bindTypeVar :: Identifier -> Type -> TI TypeSubst
     bindTypeVar name = \case
       TVar n | n == name -> pure Map.empty
-      ty | Set.member name (freeTypeVars ty) -> lift $ throwE "foobaroty"
+      ty
+        | Set.member name (freeTypeVars ty) ->
+          lift . throwE $ occursCheckErrorMessage name
       ty -> pure $ Map.singleton name ty
 
 -- | Replace all bound types with fresh polymorphic type vars
@@ -94,7 +99,7 @@ inferExpressionType' env = \case
     pure (sres `composeSubst` sp `composeSubst` sl, apply sres typeVar)
   Var name ->
     case Map.lookup name env of
-      Nothing -> lift . throwE $ "Unbound variable " ++ name
+      Nothing -> lift . throwE $ unboundVarErrorMessage name
       Just scheme -> do
         ty <- instantiate scheme
         pure (Map.empty, ty)
