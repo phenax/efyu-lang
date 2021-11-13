@@ -47,6 +47,7 @@ unify t t' = case (t, t') of
   (ty, ty') | ty == ty' -> pure Map.empty
   (TUnknown, _) -> pure Map.empty
   (_, TUnknown) -> pure Map.empty
+  (TList a, TList b) -> unify a b
   (TLambda p r, TLambda p' r') -> do
     st <- unify p p'
     st' <- unify (apply st r) (apply st r')
