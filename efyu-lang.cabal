@@ -24,7 +24,7 @@ library
       Efyu.Syntax.Utils
       Efyu.Types
       Efyu.Types.Infer
-      Efyu.Types.Types
+      Efyu.Types.Utils
       Efyu.Utils
   other-modules:
       Paths_efyu_lang
@@ -59,7 +59,7 @@ executable efyu
       Efyu.Syntax.Utils
       Efyu.Types
       Efyu.Types.Infer
-      Efyu.Types.Types
+      Efyu.Types.Utils
       Efyu.Utils
       Paths_efyu_lang
   hs-source-dirs:
@@ -99,7 +99,7 @@ test-suite efyu-test
       Efyu.Syntax.Utils
       Efyu.Types
       Efyu.Types.Infer
-      Efyu.Types.Types
+      Efyu.Types.Utils
       Efyu.Utils
       Paths_efyu_lang
   hs-source-dirs:

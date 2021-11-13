@@ -68,6 +68,13 @@ tests =
           infer (Literal $ LiteralString "") `shouldReturn` Right TString
           infer (Literal $ LiteralFloat 20.0) `shouldReturn` Right TFloat
           infer (Literal $ LiteralBool True) `shouldReturn` Right TBool
+        it "should infer list literals" $ do
+          infer (Literal $ LiteralList [int 5]) `shouldReturn` Right (TList TInt)
+          infer (Literal $ LiteralList [float 5.0, float 5.0]) `shouldReturn` Right (TList TFloat)
+          infer (Literal $ LiteralList [int 5, str "wow"])
+            `shouldReturn` Left (unificationErrorMessage TInt TString)
+          infer (Literal $ LiteralList [str "wow", float 3.0])
+            `shouldReturn` Left (unificationErrorMessage TString TFloat)
 
       describe "functions" $ do
         it "should infer lambda types" $ do

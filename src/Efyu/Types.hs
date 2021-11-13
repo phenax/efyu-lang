@@ -1,22 +1,11 @@
 module Efyu.Types where
 
-data Type
-  = TLambda Type Type
-  | TInt
-  | TString
-  | TFloat
-  | TBool
-  | TVar String
-  | TList [Expression]
-  | TUnknown
-  deriving (Show, Eq)
-
 data Literal
   = LiteralString String
   | LiteralInt Integer
   | LiteralFloat Double
   | LiteralBool Bool
-  --- | LiteralList [Expression]
+  | LiteralList [Expression]
   deriving (Show, Eq)
 
 type Identifier = String
@@ -33,4 +22,15 @@ data Expression
   | Apply Expression Expression
   | Lambda Identifier Expression
   | IfElse Expression Expression Expression
+  deriving (Show, Eq)
+
+data Type
+  = TLambda Type Type
+  | TInt
+  | TString
+  | TFloat
+  | TBool
+  | TVar String
+  | TList Type
+  | TUnknown
   deriving (Show, Eq)

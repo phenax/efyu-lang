@@ -82,6 +82,11 @@ inferLiteralType env = \case
   LiteralString _ -> pure TString
   LiteralBool _ -> pure TBool
   LiteralFloat _ -> pure TFloat
+  LiteralList exprs -> TList <$> foldM unifyE TUnknown exprs
+    where
+      unifyE :: Type -> Expression -> TI Type
+      unifyE t1 expr =
+        inferExpressionType env expr >>= (\t2 -> higherSp t1 t2 <$ unify t1 t2)
 
 inferExpressionType' :: TypeEnv -> Expression -> TI (TypeSubst, Type)
 inferExpressionType' env = \case
