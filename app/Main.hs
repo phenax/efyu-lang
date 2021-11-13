@@ -2,7 +2,7 @@ module Main where
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Efyu.Syntax.Parse (parseFile)
-import Efyu.Types.Infer (checkModule, runTI)
+import Efyu.TypeChecker.Infer (checkModule, runTI)
 import Text.Megaparsec.Error (errorBundlePretty)
 import Text.Pretty.Simple (pPrint)
 

@@ -1,4 +1,4 @@
-module Efyu.Types.Utils where
+module Efyu.TypeChecker.Utils where
 
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)

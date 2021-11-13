@@ -1,4 +1,4 @@
-module Efyu.Syntax.Type where
+module Efyu.Syntax.TypeAnnotations where
 
 import Efyu.Syntax.Utils
 import Efyu.Types

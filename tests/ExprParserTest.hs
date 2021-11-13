@@ -1,7 +1,7 @@
 module ExprParserTest where
 
 import Efyu.Syntax.Expression
-import Efyu.Syntax.Type (typeAnnotationP)
+import Efyu.Syntax.TypeAnnotations (typeAnnotationP)
 import Efyu.Types
 import Test.Hspec
 import Test.Hspec.Megaparsec

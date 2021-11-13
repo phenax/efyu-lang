@@ -19,11 +19,11 @@ library
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
-      Efyu.Syntax.Type
+      Efyu.Syntax.TypeAnnotations
       Efyu.Syntax.Utils
+      Efyu.TypeChecker.Infer
+      Efyu.TypeChecker.Utils
       Efyu.Types
-      Efyu.Types.Infer
-      Efyu.Types.Utils
       Efyu.Utils
   other-modules:
       Paths_efyu_lang
@@ -53,11 +53,11 @@ executable efyu
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
-      Efyu.Syntax.Type
+      Efyu.Syntax.TypeAnnotations
       Efyu.Syntax.Utils
+      Efyu.TypeChecker.Infer
+      Efyu.TypeChecker.Utils
       Efyu.Types
-      Efyu.Types.Infer
-      Efyu.Types.Utils
       Efyu.Utils
       Paths_efyu_lang
   hs-source-dirs:
@@ -92,11 +92,11 @@ test-suite efyu-test
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
-      Efyu.Syntax.Type
+      Efyu.Syntax.TypeAnnotations
       Efyu.Syntax.Utils
+      Efyu.TypeChecker.Infer
+      Efyu.TypeChecker.Utils
       Efyu.Types
-      Efyu.Types.Infer
-      Efyu.Types.Utils
       Efyu.Utils
       Paths_efyu_lang
   hs-source-dirs:

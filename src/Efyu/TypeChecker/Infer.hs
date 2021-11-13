@@ -1,4 +1,4 @@
-module Efyu.Types.Infer where
+module Efyu.TypeChecker.Infer where
 
 import Control.Monad (foldM, void)
 import Control.Monad.Trans.Class (MonadTrans (lift))
@@ -8,8 +8,8 @@ import Data.List (sortBy)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Efyu.Syntax.Block
+import Efyu.TypeChecker.Utils
 import Efyu.Types
-import Efyu.Types.Utils
 
 data TIEnv = TIEnv {}
 
