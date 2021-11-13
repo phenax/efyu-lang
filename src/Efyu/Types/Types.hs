@@ -32,7 +32,7 @@ specificity _ TUnknown = GT
 specificity _ _ = EQ
 
 higherSp :: Type -> Type -> Type
-higherSp t1 t2 = case specificity t1 t2 of GT -> t1; LT -> t2; EQ -> t1
+higherSp t1 t2 = case specificity t1 t2 of LT -> t2; _ -> t1
 
 -- Polymorphic set of vars (forall a, b, c. Type)
 data TypeScheme = TypeScheme [String] Type deriving (Show)

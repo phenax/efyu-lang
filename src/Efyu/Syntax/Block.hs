@@ -10,13 +10,11 @@ import Text.Megaparsec.Char
 
 data Block
   = Module String [Block]
-  | Def Identifier Expression
+  | Def Definition
   deriving (Show, Eq)
 
 defineFnP :: MParser Block
-defineFnP = do
-  (name, func) <- definitionP
-  pure $ Def name func
+defineFnP = Def <$> definitionP
 
 definitionListP :: (MParser Block -> MParser Block) -> MParser [Block]
 definitionListP pre = (pre p `sepBy` many newline) <* scnl

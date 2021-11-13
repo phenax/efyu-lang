@@ -56,7 +56,7 @@ tests = do
           x = 1 -- define var
         in x
         |]
-        `shouldParse` Let [("x", int 1)] (Var "x")
+        `shouldParse` Let [DefValue "x" (int 1)] (Var "x")
     it "should ignore multi line comments" $ do
       p [r|x {- comment -}|] `shouldParse` Var "x"
       p
@@ -70,19 +70,18 @@ tests = do
   describe "let binding expression" $ do
     it "should parse simple let binding" $ do
       p [r| let x = 200. in x |]
-        `shouldParse` Let [("x", float 200.0)] (Var "x")
+        `shouldParse` Let [DefValue "x" (float 200.0)] (Var "x")
       p [r| let x a = add a in x |]
-        `shouldParse` Let [("x", "a" *->> Var "add" `call` Var "a")] (Var "x")
+        `shouldParse` Let [DefValue "x" ("a" *->> Var "add" `call` Var "a")] (Var "x")
       p [r| let x a b = add a b in x |]
-        `shouldParse` Let [("x", "a" *->> "b" *->> Var "add" `call` Var "a" `call` Var "b")] (Var "x")
+        `shouldParse` Let [DefValue "x" ("a" *->> "b" *->> Var "add" `call` Var "a" `call` Var "b")] (Var "x")
     it "should parse nested let binding" $ do
       p [r| let x = let y = 200.0 in y; in x |]
         `shouldParse` Let
-          [ ( "x",
+          [ DefValue "x" $
               Let
-                [("y", float 200.0)]
+                [DefValue "y" (float 200.0)]
                 (Var "y")
-            )
           ]
           (Var "x")
       p
@@ -94,11 +93,10 @@ tests = do
             in y
         in x |]
         `shouldParse` Let
-          [ ( "x",
+          [ DefValue "x" $
               Let
-                [("y", float 200.0)]
+                [DefValue "y" (float 200.0)]
                 (Var "y")
-            )
           ]
           (Var "x")
       p
@@ -109,37 +107,36 @@ tests = do
               in y
         in x |]
         `shouldParse` Let
-          [ ( "x",
+          [ DefValue "x" $
               Let
-                [("y", float 200.0)]
+                [DefValue "y" (float 200.0)]
                 (Var "y")
-            )
           ]
           (Var "x")
     it "should parse different layouts of writing let bindings with indents" $ do
       p
         [r| let x = 200. in x |]
-        `shouldParse` Let [("x", float 200.0)] (Var "x")
+        `shouldParse` Let [DefValue "x" (float 200.0)] (Var "x")
       p
         [r|
           let x = 200. in
             x |]
-        `shouldParse` Let [("x", float 200.0)] (Var "x")
+        `shouldParse` Let [DefValue "x" (float 200.0)] (Var "x")
       p
         [r| let
             x = 200.
           in x |]
-        `shouldParse` Let [("x", float 200.0)] (Var "x")
+        `shouldParse` Let [DefValue "x" (float 200.0)] (Var "x")
       p
         [r|
           let x = 200.
           in x
         |]
-        `shouldParse` Let [("x", Literal $ LiteralFloat 200.0)] (Var "x")
+        `shouldParse` Let [DefValue "x" (Literal $ LiteralFloat 200.0)] (Var "x")
       p [r| let x = 200.; y = "wow"; in x|]
         `shouldParse` Let
-          [ ("x", float 200.0),
-            ("y", str "wow")
+          [ DefValue "x" (float 200.0),
+            DefValue "y" (str "wow")
           ]
           (Var "x")
       p
@@ -149,8 +146,8 @@ tests = do
             y = "wow";
           in x|]
         `shouldParse` Let
-          [ ("x", float 200.0),
-            ("y", str "wow")
+          [ DefValue "x" (float 200.0),
+            DefValue "y" (str "wow")
           ]
           (Var "x")
       p
@@ -162,8 +159,8 @@ tests = do
               "wow"
           in x|]
         `shouldParse` Let
-          [ ("x", float 200.0),
-            ("y", str "wow")
+          [ DefValue "x" (float 200.0),
+            DefValue "y" (str "wow")
           ]
           (Var "x")
       p
@@ -175,8 +172,8 @@ tests = do
               "wow"
           in x|]
         `shouldParse` Let
-          [ ("x", Var "add" `call` int 1 `call` int 2),
-            ("y", str "wow")
+          [ DefValue "x" (Var "add" `call` int 1 `call` int 2),
+            DefValue "y" (str "wow")
           ]
           (Var "x")
       p
@@ -211,7 +208,7 @@ tests = do
         in fn 5
         |]
         `shouldParse` Let
-          [("fn", "x" *->> Var "mul" `call` Var "x" `call` int 5)]
+          [DefValue "fn" $ "x" *->> Var "mul" `call` Var "x" `call` int 5]
           (Var "fn" `call` int 5)
     it "should parse lambda defintion in let" $ do
       p
@@ -222,7 +219,7 @@ tests = do
         in fn 5
         |]
         `shouldParse` Let
-          [("fn", "x" *->> Var "mul" `call` Var "x" `call` int 5)]
+          [DefValue "fn" $ "x" *->> Var "mul" `call` Var "x" `call` int 5]
           (Var "fn" `call` int 5)
 
   describe "apply expression" $ do
@@ -253,19 +250,19 @@ tests = do
 
     it "should parse apply inside let" $ do
       p [r| let x = add 1 in x |]
-        `shouldParse` Let [("x", Var "add" `call` int 1)] (Var "x")
+        `shouldParse` Let [DefValue "x" $ Var "add" `call` int 1] (Var "x")
       p
         [r|
         let
           x = 1
         in add 1 x |]
-        `shouldParse` Let [("x", int 1)] (Var "add" `call` int 1 `call` Var "x")
+        `shouldParse` Let [DefValue "x" (int 1)] (Var "add" `call` int 1 `call` Var "x")
       p
         [r|
         let
           x = add 1 2 3
         in x|]
-        `shouldParse` Let [("x", Var "add" `call` int 1 `call` int 2 `call` int 3)] (Var "x")
+        `shouldParse` Let [DefValue "x" $ Var "add" `call` int 1 `call` int 2 `call` int 3] (Var "x")
       p
         [r|
         let
@@ -273,8 +270,8 @@ tests = do
           y = get "num" 2;
         in mul x y|]
         `shouldParse` Let
-          [ ("x", Var "add" `call` int 1 `call` int 2),
-            ("y", Var "get" `call` str "num" `call` int 2)
+          [ DefValue "x" (Var "add" `call` int 1 `call` int 2),
+            DefValue "y" (Var "get" `call` str "num" `call` int 2)
           ]
           (Var "mul" `call` Var "x" `call` Var "y")
 
@@ -313,8 +310,8 @@ tests = do
           in foo 5
         |]
         `shouldParse` Let
-          [ ("_", TypeAnnotation "foo" $ TInt `tlam` TString),
-            ("foo", "x" *->> Var "show" `call` Var "x")
+          [ DefSignature "foo" (TInt `tlam` TString),
+            DefValue "foo" ("x" *->> Var "show" `call` Var "x")
           ]
           (Var "foo" `call` int 5)
     it "should parse definitions types in muliple lines" $ do
@@ -330,24 +327,24 @@ tests = do
           in foo 5
         |]
         `shouldParse` Let
-          [ ("_", TypeAnnotation "foo" $ TInt `tlam` TString),
-            ("foo", "x" *->> Var "show" `call` Var "x"),
-            ("_", TypeAnnotation "foo1" $ TInt `tlam` TInt),
-            ("foo1", "x" *->> int 1)
+          [ DefSignature "foo" (TInt `tlam` TString),
+            DefValue "foo" ("x" *->> Var "show" `call` Var "x"),
+            DefSignature "foo1" (TInt `tlam` TInt),
+            DefValue "foo1" ("x" *->> int 1)
           ]
           (Var "foo" `call` int 5)
 
   describe "typeAnnotationP > type annotations" $ do
     let tp = MP.parse (typeAnnotationP <* eof) "type.fu"
     it "should parse primitive types" $ do
-      tp [r|name : String |] `shouldParse` TypeAnnotation "name" TString
-      tp [r|name : Int |] `shouldParse` TypeAnnotation "name" TInt
-      tp [r|name : Bool |] `shouldParse` TypeAnnotation "name" TBool
-      tp [r|name : Float|] `shouldParse` TypeAnnotation "name" TFloat
+      tp [r|name : String |] `shouldParse` DefSignature "name" TString
+      tp [r|name : Int |] `shouldParse` DefSignature "name" TInt
+      tp [r|name : Bool |] `shouldParse` DefSignature "name" TBool
+      tp [r|name : Float|] `shouldParse` DefSignature "name" TFloat
     it "should parse lambda types" $ do
-      tp [r|fn : String -> Int |] `shouldParse` TypeAnnotation "fn" (TString `tlam` TInt)
-      tp [r|fn: Bool -> String -> Int |] `shouldParse` TypeAnnotation "fn" (TBool `tlam` TString `tlam` TInt)
-      tp [r|fn: a -> b -> c |] `shouldParse` TypeAnnotation "fn" (TVar "a" `tlam` TVar "b" `tlam` TVar "c")
+      tp [r|fn : String -> Int |] `shouldParse` DefSignature "fn" (TString `tlam` TInt)
+      tp [r|fn: Bool -> String -> Int |] `shouldParse` DefSignature "fn" (TBool `tlam` TString `tlam` TInt)
+      tp [r|fn: a -> b -> c |] `shouldParse` DefSignature "fn" (TVar "a" `tlam` TVar "b" `tlam` TVar "c")
 
   describe "if-then-else" $ do
     it "should parse if expressions" $ do
@@ -385,12 +382,11 @@ tests = do
               else 2
         |]
         `shouldParse` Let
-          [ ( "cond",
+          [ DefValue "cond" $
               IfElse
                 (Var "test")
                 (Var "f" `call` int 1)
                 (Var "g" `call` int 2)
-            )
           ]
           (IfElse (Var "cond" `call` int 1) (int 1) (int 2))
 

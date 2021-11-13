@@ -24,15 +24,15 @@ parameter = identifier
 varP :: MParser Expression
 varP = Var <$> lexeme identifier
 
-definitionP :: MParser (Identifier, Expression)
-definitionP = try defP <|> (("_",) <$> typeAnnotationP)
+definitionP :: MParser Definition
+definitionP = try defP <|> typeAnnotationP
   where
     defP = withLineFold $ \sp -> do
       name <- identifier <* sp
       params <- (parameter <* sp) `manyTill` char '='
       body <- sp >> expressionP
       optional (char ';')
-      pure (name, foldr' Lambda body params)
+      pure $ DefValue name (foldr' Lambda body params)
 
 letBindingP :: MParser Expression
 letBindingP = do

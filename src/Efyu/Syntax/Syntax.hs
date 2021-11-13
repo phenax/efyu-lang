@@ -11,12 +11,16 @@ data Literal
 
 type Identifier = String
 
+data Definition
+  = DefValue Identifier Expression
+  | DefSignature Identifier Type
+  deriving (Show, Eq)
+
 data Expression
   = Literal Literal
-  | Let [(Identifier, Expression)] Expression
+  | Let [Definition] Expression
   | Var String
   | Apply Expression Expression
   | Lambda Identifier Expression
-  | TypeAnnotation Identifier Type
   | IfElse Expression Expression Expression
   deriving (Show, Eq)

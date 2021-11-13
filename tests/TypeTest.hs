@@ -48,15 +48,14 @@ tests =
         it "should infer types of recursive functions" $ do
           let recursiveExpr =
                 Let
-                  [ ("gte", "x" *->> "y" *->> bool True),
-                    ("sub", "x" *->> "y" *->> int 2),
-                    ( "fact",
+                  [ DefValue "gte" ("x" *->> "y" *->> bool True),
+                    DefValue "sub" ("x" *->> "y" *->> int 2),
+                    DefValue "fact" $
                       "x"
                         *->> IfElse
                           (Var "gte" `call` Var "x" `call` int 1)
                           (Var "fact" `call` (Var "sub" `call` Var "x" `call` int 1))
                           (int 1)
-                    )
                   ]
                   (Var "fact" `call` int 5)
           check recursiveExpr TInt `shouldReturn` Right TInt
@@ -92,8 +91,8 @@ tests =
             `shouldReturn` Right (TLambda (TVar "a2") (TVar "a2"))
           infer
             ( Let
-                [ ("x", Literal . LiteralInt $ 200),
-                  ("id", "x" *->> Var "x")
+                [ DefValue "x" (Literal . LiteralInt $ 200),
+                  DefValue "id" ("x" *->> Var "x")
                 ]
                 (Var "id" `call` Var "x")
             )
@@ -116,18 +115,15 @@ tests =
           `shouldReturn` Left "Unbound variable x1"
 
       it "should infer types from let bindings" $ do
-        infer (Let [("x", Literal . LiteralInt $ 200)] (Var "x"))
+        infer (Let [DefValue "x" (Literal . LiteralInt $ 200)] (Var "x"))
           `shouldReturn` Right TInt
         infer
           ( Let
-              [ ("x", Literal . LiteralInt $ 200),
-                ("id", "x" *->> Var "x")
+              [ DefValue "x" (Literal . LiteralInt $ 200),
+                DefValue "id" ("x" *->> Var "x")
               ]
               (Var "id" `call` Var "x")
           )
           `shouldReturn` Right TInt
-
-      it "should infer type annotation (probably useless)" $ do
-        infer (TypeAnnotation "name" TInt) `shouldReturn` Right TInt
 
 ---

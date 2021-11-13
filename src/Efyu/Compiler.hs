@@ -32,24 +32,26 @@ compileExpression = \case
   Lambda param expr ->
     param ++ " => " ++ compileExpression expr
   Var x -> x
-  Let bindings body ->
-    let toVar (name, val) = "const " ++ name ++ " = " ++ compileExpression val ++ ";"
-        vars = map toVar . filter ((/= "_") . fst) $ bindings
-        block = unlines vars ++ "\n return " ++ compileExpression body
-     in iife block
+  -- Let bindings body ->
+  --   let toVar (name, val) = "const " ++ name ++ " = " ++ compileExpression val ++ ";"
+  --       vars = map toVar . filter ((/= "_") . fst) $ bindings
+  --       block = unlines vars ++ "\n return " ++ compileExpression body
+  --    in iife block
   IfElse cond ifE elseE ->
     let condStr = parens . compileExpression $ cond
         bodyS = braces . ("return " ++) . compileExpression
      in iife $ "if " ++ condStr ++ "\n" ++ bodyS ifE ++ "\n else " ++ bodyS elseE
-  TypeAnnotation _ _ -> ""
+  _ -> "<pending>"
 
 compileBlock :: Block -> String
 compileBlock = \case
   Module name blocks ->
     let children = unlines . map compileBlock $ blocks
-        toName = \case Def n _ -> n; _ -> ""
+        toName _ = ""
         moduleStr = children ++ "; return " ++ (braces . intercalate "," . map toName $ blocks)
      in "export const " ++ name ++ " = " ++ iife moduleStr
-  Def name expr ->
-    let value = compileExpression expr
-     in "const " ++ name ++ " =  " ++ value ++ ";"
+  _ -> "<pending>"
+
+-- Def name expr ->
+--   let value = compileExpression expr
+--    in "const " ++ name ++ " =  " ++ value ++ ";"

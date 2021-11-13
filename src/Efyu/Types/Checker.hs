@@ -23,9 +23,10 @@ checkExpressionType' env expr ty = fst <$> checkExpressionType env expr ty
 
 -- TODO: Use type annotations
 checkBlockType :: TypeEnv -> Block -> Type -> TI (TypeEnv, Type)
-checkBlockType env (Def _ expr) ty = (env,) <$> checkExpressionType' env expr ty
 checkBlockType env (Module _ blocks) _ = foldM accBlockEnv (env, TUnknown) blocks
   where
     accBlockEnv (env', _) b = checkBlockType env' b TUnknown
+checkBlockType env (Def (DefValue _ expr)) ty = (env,) <$> checkExpressionType' env expr ty
+checkBlockType env (Def (DefSignature _ _)) _ = pure (env, TUnknown)
 
 ---

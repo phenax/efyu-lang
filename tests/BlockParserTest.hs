@@ -16,11 +16,11 @@ tests = do
   describe "define block statement" $ do
     it "should parse definitions into a main module" $ do
       parse [r|num = 20|]
-        `shouldParse` Module "Main" [Def "num" (int 20)]
+        `shouldParse` Module "Main" [Def $ DefValue "num" (int 20)]
       parse
         [r|
 num = 20 |]
-        `shouldParse` Module "Main" [Def "num" (int 20)]
+        `shouldParse` Module "Main" [Def $ DefValue "num" (int 20)]
       parse
         `shouldFailOn` [r|
 num =
@@ -31,7 +31,7 @@ num =
   let
     x = 2
   in x |]
-        `shouldParse` Module "Main" [Def "num" (Let [("x", int 2)] (Var "x"))]
+        `shouldParse` Module "Main" [Def $ DefValue "num" (Let [DefValue "x" (int 2)] (Var "x"))]
       parse
         `shouldFailOn` [r|
                  num = 20 |]
@@ -43,9 +43,9 @@ str = "ww"
 fn a b c = stuff b c a |]
         `shouldParse` Module
           "Main"
-          [ Def "num" (int 20),
-            Def "str" (str "ww"),
-            Def "fn" $ "a" *->> "b" *->> "c" *->> Var "stuff" `call` Var "b" `call` Var "c" `call` Var "a"
+          [ Def $ DefValue "num" (int 20),
+            Def $ DefValue "str" (str "ww"),
+            Def $ DefValue "fn" $ "a" *->> "b" *->> "c" *->> Var "stuff" `call` Var "b" `call` Var "c" `call` Var "a"
           ]
     it "should parse different styles for definitions" $ do
       parse
@@ -66,10 +66,10 @@ dummy = 2
 |]
         `shouldParse` Module
           "Main"
-          [ Def "num" (int 20),
-            Def "str" (str "ww"),
-            Def "fn" $ "a" *->> "b" *->> Var "stuff" `call` Var "a" `call` Var "b",
-            Def "dummy" (int 2)
+          [ Def $ DefValue "num" (int 20),
+            Def $ DefValue "str" (str "ww"),
+            Def $ DefValue "fn" $ "a" *->> "b" *->> Var "stuff" `call` Var "a" `call` Var "b",
+            Def $ DefValue "dummy" (int 2)
           ]
 
   describe "definitions with type annotations" $ do
@@ -81,8 +81,8 @@ num = 20
 |]
         `shouldParse` Module
           "Main"
-          [ Def "_" (TypeAnnotation "num" TInt),
-            Def "num" (int 20)
+          [ Def $ DefSignature "num" TInt,
+            Def $ DefValue "num" (int 20)
           ]
       parse
         [r|
@@ -94,8 +94,8 @@ num a b = c
 |]
         `shouldParse` Module
           "Main"
-          [ Def "_" (TypeAnnotation "ello" TInt),
-            Def "ello" (int 20),
-            Def "_" (TypeAnnotation "num" $ TInt `tlam` TString `tlam` TBool),
-            Def "num" ("a" *->> "b" *->> Var "c")
+          [ Def $ DefSignature "ello" TInt,
+            Def $ DefValue "ello" (int 20),
+            Def $ DefSignature "num" $ TInt `tlam` TString `tlam` TBool,
+            Def $ DefValue "num" ("a" *->> "b" *->> Var "c")
           ]

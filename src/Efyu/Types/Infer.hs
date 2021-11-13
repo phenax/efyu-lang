@@ -8,7 +8,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Efyu.Syntax.Syntax
 import Efyu.Types.Types
-import Efyu.Utils (debugM)
 
 data TIEnv = TIEnv {}
 
@@ -107,13 +106,13 @@ inferExpressionType' env = \case
     subst <- unify ifT elseT
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
     pure (Map.empty, apply subst' $ higherSp ifT elseT)
-  TypeAnnotation _n ty -> pure (Map.empty, ty)
 
 -- | Resolve a set of bindings to a set of type substitutions and
-resolveBindings :: TypeEnv -> [(Identifier, Expression)] -> TI (TypeSubst, TypeEnv)
+resolveBindings :: TypeEnv -> [Definition] -> TI (TypeSubst, TypeEnv)
 resolveBindings env = foldM getSubstEnv (Map.empty, env)
   where
-    getSubstEnv (st, env') (name, expr) = do
+    getSubstEnv acc (DefSignature _ _) = pure acc
+    getSubstEnv (st, env') (DefValue name expr) = do
       -- Create a temporary scheme (needed for recursive definitions)
       tmpTypeScheme <- generalize (apply st env') <$> newTypeVar "t"
       let tmpEnv = Map.insert name tmpTypeScheme env'
@@ -122,7 +121,6 @@ resolveBindings env = foldM getSubstEnv (Map.empty, env)
       (stBinding, tyBinding) <- inferExpressionType' tmpEnv expr
       let properTypeScheme = generalize (apply st tmpEnv) tyBinding
       let properEnv = Map.insert name properTypeScheme env'
-      debugM tyBinding
 
       -- let tyName = case expr of TypeAnnotation n _ -> n; _ -> name
       pure (st `Map.union` stBinding, properEnv)

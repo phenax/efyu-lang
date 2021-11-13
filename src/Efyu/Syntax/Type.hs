@@ -27,8 +27,8 @@ tLambdaP sp = do
 typeP :: MParser () -> MParser Type
 typeP sp = try (tLambdaP sp) <?> "<type>"
 
-typeAnnotationP :: MParser Expression
+typeAnnotationP :: MParser Definition
 typeAnnotationP = withLineFold $ \sp -> do
   name <- identifier <* sp
   L.symbol sp ":"
-  TypeAnnotation name <$> (typeP sp <* sc)
+  DefSignature name <$> (typeP sp <* sc)
