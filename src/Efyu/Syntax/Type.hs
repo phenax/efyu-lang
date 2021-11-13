@@ -5,6 +5,11 @@ import Efyu.Types
 import Text.Megaparsec
 import qualified Text.Megaparsec.Char.Lexer as L
 
+tListP :: MParser () -> MParser Type
+tListP sp = TList <$> p
+  where
+    p = L.symbol sc "[" >> typeP sp <* sc <* L.symbol sc "]"
+
 tNameP _sp = do
   name <- identifier
   -- TODO: Product types
@@ -15,13 +20,19 @@ tNameP _sp = do
     "Bool" -> TBool
     n -> TVar n
 
+tLambdaP :: MParser () -> MParser Type
 tLambdaP sp = do
-  tys <- (sp >> tNameP sp <* sc) `sepBy1` L.symbol sp "->"
+  tys <- (sp >> tAtomP sp <* sc) `sepBy1` L.symbol sp "->"
   pure $ mergety tys
   where
     mergety [] = undefined -- NOTE: Can't happen since sepBy1 guarentees nonempty
     mergety [ty] = ty
     mergety (ty : tys) = TLambda ty $ mergety tys
+
+tAtomP :: MParser () -> MParser Type
+tAtomP sp = tNameP sp <|> tListP sp <|> (try . parens $ tLambdaP sp)
+  where
+    parens = withParens
 
 typeP :: MParser () -> MParser Type
 typeP sp = try (tLambdaP sp) <?> "<type>"
