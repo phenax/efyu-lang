@@ -12,6 +12,7 @@ let
     haskellPackages.cabal-install
     haskellPackages.hpack
     nodePackages.nodemon
+    pkgs.zlib
   ];
 
   commonHsPackages = with haskellPackages; [ ];

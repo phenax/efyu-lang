@@ -11,18 +11,16 @@ import Efyu.Syntax.Block
 import Efyu.TypeChecker.Utils
 import Efyu.Types
 
-data TIEnv = TIEnv {}
-
 type TI = StateT Int (ExceptT String IO)
 
 unificationErrorMessage :: Type -> Type -> String
 unificationErrorMessage t1 t2 =
   "unable to unify types: " ++ show t1 ++ " and " ++ show t2
 
-unboundVarErrorMessage :: String -> String
+unboundVarErrorMessage :: Identifier -> String
 unboundVarErrorMessage name = "reference to unbound variable: " ++ name
 
-occursCheckErrorMessage :: String -> String
+occursCheckErrorMessage :: Identifier -> String
 occursCheckErrorMessage name = "occur check failed: Type var " ++ name ++ " already exists"
 
 runTI :: TI a -> IO (Either String a)
@@ -89,6 +87,11 @@ inferLiteralType env = \case
       unifyE t1 expr =
         inferExpressionType env expr >>= (\t2 -> higherSp t1 t2 <$ unify t1 t2)
 
+inferExpressionType :: TypeEnv -> Expression -> TI Type
+inferExpressionType env expr = do
+  (subst, ty) <- inferExpressionType' env expr
+  pure $ apply subst ty
+
 inferExpressionType' :: TypeEnv -> Expression -> TI (TypeSubst, Type)
 inferExpressionType' env = \case
   Literal lit -> (Map.empty,) <$> inferLiteralType env lit
@@ -110,7 +113,7 @@ inferExpressionType' env = \case
         ty <- instantiate scheme
         pure (Map.empty, ty)
   Let bindings body -> do
-    (stDefs, env') <- resolveDefinitionList env bindings
+    (stDefs, env') <- resolveDeclarationList env bindings
     (stBody, tyBody) <- inferExpressionType' (apply stDefs env') body
     pure (stDefs `composeSubst` stBody, tyBody)
   IfElse cond ifE elseE -> do
@@ -122,8 +125,8 @@ inferExpressionType' env = \case
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
     pure (Map.empty, apply subst' $ higherSp ifT elseT)
 
-resolveDefinition :: TypeEnv -> TypeSubst -> Definition -> TI (TypeSubst, TypeEnv)
-resolveDefinition env st = \case
+resolveDeclaration :: TypeEnv -> TypeSubst -> Definition -> TI (TypeSubst, TypeEnv)
+resolveDeclaration env st = \case
   (DefSignature name ty) -> do
     let tsch = TypeScheme (Set.toList . freeTypeVars $ ty) ty
     pure (st, Map.insert name tsch env)
@@ -145,18 +148,13 @@ resolveDefinition env st = \case
     pure (st `Map.union` stBinding, properEnv)
 
 -- | Resolve a set of bindings to a set of type substitutions and
-resolveDefinitionList :: TypeEnv -> [Definition] -> TI (TypeSubst, TypeEnv)
-resolveDefinitionList env = foldM getSubstEnv (Map.empty, env) . sortBy cmpDefinition
+resolveDeclarationList :: TypeEnv -> [Definition] -> TI (TypeSubst, TypeEnv)
+resolveDeclarationList env = foldM getSubstEnv (Map.empty, env) . sortBy cmpDefinition
   where
-    getSubstEnv (st, env') def = resolveDefinition env' st def
+    getSubstEnv (st, env') def = resolveDeclaration env' st def
     cmpDefinition (DefSignature _ _) _ = LT
     cmpDefinition _ (DefSignature _ _) = GT
     cmpDefinition _ _ = EQ
-
-inferExpressionType :: TypeEnv -> Expression -> TI Type
-inferExpressionType env expr = do
-  (subst, ty) <- inferExpressionType' env expr
-  pure $ apply subst ty
 
 -- | Check if expression matches given type
 checkExpressionType :: TypeEnv -> Expression -> Type -> TI (Type, Expression)
@@ -172,7 +170,7 @@ checkBlockType env (Module _ blocks) _ = foldM accBlockEnv env blocks
   where
     accBlockEnv env' b = checkBlockType env' b TUnknown
 checkBlockType env (Def def) _ = do
-  (st, env') <- resolveDefinition env Map.empty def
+  (st, env') <- resolveDeclaration env Map.empty def
   pure $ apply st env'
 
 -- | Type check module (module block)
