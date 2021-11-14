@@ -7,10 +7,22 @@ import Efyu.Types
 import Efyu.Utils (mapDeleteKeys)
 
 -- type variable names
-type TypeVars = Set.Set String
+type TypeVars = Set.Set (IdentifierName PolyTypeName)
 
 -- substitutions
-type TypeSubst = Map.Map String Type
+type TypeSubst = Map.Map (IdentifierName PolyTypeName) Type
+
+-- Polymorphic set of vars (forall a, b, c. Type)
+data TypeScheme = TypeScheme [IdentifierName PolyTypeName] Type deriving (Show)
+
+-- type definitions map (name -> scheme)
+type TypeEnv = Map.Map (IdentifierName VarName) TypeScheme
+
+-- data TypeEnv' = TypeEnv'
+--   { envValues :: Map.Map (IdentifierName VarName) TypeScheme,
+--     envTypes :: Map.Map (IdentifierName TypeName) TypeScheme,
+--     envContructors :: Map.Map (IdentifierName ContructorName) TypeScheme
+--   }
 
 composeSubst :: TypeSubst -> TypeSubst -> TypeSubst
 composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1
@@ -22,12 +34,6 @@ specificity _ _ = EQ
 
 higherSp :: Type -> Type -> Type
 higherSp t1 t2 = case specificity t1 t2 of LT -> t2; _ -> t1
-
--- Polymorphic set of vars (forall a, b, c. Type)
-data TypeScheme = TypeScheme [String] Type deriving (Show)
-
--- type definitions map (name -> scheme)
-type TypeEnv = Map.Map String TypeScheme
 
 class FreeTypeVar a where
   -- | Get a set of all free type variables

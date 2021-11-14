@@ -17,11 +17,11 @@ unificationErrorMessage :: Type -> Type -> String
 unificationErrorMessage t1 t2 =
   "unable to unify types: " ++ show t1 ++ " and " ++ show t2
 
-unboundVarErrorMessage :: Identifier -> String
-unboundVarErrorMessage name = "reference to unbound variable: " ++ name
+unboundVarErrorMessage :: IdentifierName 'VarName -> String
+unboundVarErrorMessage (IdentifierName name) = "reference to unbound variable: " ++ name
 
-occursCheckErrorMessage :: Identifier -> String
-occursCheckErrorMessage name = "occur check failed: Type var " ++ name ++ " already exists"
+occursCheckErrorMessage :: IdentifierName 'PolyTypeName -> String
+occursCheckErrorMessage (IdentifierName name) = "occur check failed: Type var " ++ name ++ " already exists"
 
 runTI :: TI a -> IO (Either String a)
 runTI t = do
@@ -35,7 +35,7 @@ newTypeVar :: Identifier -> TI Type
 newTypeVar prefix = do
   s <- get
   put $ s + 1
-  pure . TVar $ prefix ++ show s
+  pure . TVar . IdentifierName $ prefix ++ show s
 
 -- | Unify two types and return substitutions
 unify :: Type -> Type -> TI TypeSubst
@@ -56,7 +56,7 @@ unify t t' = case (t, t') of
   (ty, ty') ->
     lift . throwE $ unificationErrorMessage ty ty'
   where
-    bindTypeVar :: Identifier -> Type -> TI TypeSubst
+    bindTypeVar :: IdentifierName 'PolyTypeName -> Type -> TI TypeSubst
     bindTypeVar name = \case
       TVar n | n == name -> pure Map.empty
       ty

@@ -16,13 +16,13 @@ tTupleP sp = TTuple <$> p
     p = L.symbol sc "(" >> (typeP sp `sepBy1` L.symbol sp ",") <* sc <* L.symbol sc ")"
 
 tNameP _sp = do
-  name <- identifier
-  -- TODO: Product types
+  name <- polyTypeIdentifier
+  -- TODO: Split out types and polytypes
   pure $ case name of
-    "Int" -> TInt
-    "Float" -> TFloat
-    "String" -> TString
-    "Bool" -> TBool
+    IdentifierName "Int" -> TInt
+    IdentifierName "Float" -> TFloat
+    IdentifierName "String" -> TString
+    IdentifierName "Bool" -> TBool
     n -> TVar n
 
 tLambdaP :: MParser () -> MParser Type
@@ -48,6 +48,6 @@ typeP sp = try (tLambdaP sp) <?> "<type>"
 
 typeAnnotationP :: MParser Definition
 typeAnnotationP = withLineFold $ \sp -> do
-  name <- identifier <* sp
+  name <- varIdentifier <* sp
   L.symbol sp ":"
   DefSignature name <$> (typeP sp <* sc)

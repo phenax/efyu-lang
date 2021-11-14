@@ -28,6 +28,8 @@ default-extensions:
   - TupleSections
   - FlexibleInstances
   - TypeSynonymInstances
+  - DataKinds
+  - KindSignatures
 
 library:
   source-dirs: src/

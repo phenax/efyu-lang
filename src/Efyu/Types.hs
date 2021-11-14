@@ -11,17 +11,24 @@ data Literal
 
 type Identifier = String
 
+-- | Set of identifier types
+data IdentifierType = VarName | PolyTypeName | TypeName | ContructorName
+
+-- | Identifier constructor
+newtype IdentifierName (t :: IdentifierType) = IdentifierName {getIdentifier :: String}
+  deriving (Show, Eq, Ord)
+
 data Definition
-  = DefValue Identifier Expression
-  | DefSignature Identifier Type
+  = DefValue (IdentifierName VarName) Expression
+  | DefSignature (IdentifierName VarName) Type
   deriving (Show, Eq)
 
 data Expression
   = Literal Literal
   | Let [Definition] Expression
-  | Var String
+  | Var (IdentifierName VarName)
   | Apply Expression Expression
-  | Lambda Identifier Expression
+  | Lambda (IdentifierName 'VarName) Expression
   | IfElse Expression Expression Expression
   deriving (Show, Eq)
 
@@ -31,7 +38,7 @@ data Type
   | TString
   | TFloat
   | TBool
-  | TVar String
+  | TVar (IdentifierName 'PolyTypeName)
   | TList Type
   | TTuple [Type]
   | TUnknown

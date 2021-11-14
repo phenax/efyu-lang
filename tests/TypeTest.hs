@@ -16,23 +16,23 @@ tests =
         check (int 5) TString
           `shouldReturn` Left (unificationErrorMessage TString TInt)
         check
-          ("x" *->> "f" *->> Var "f" `call` Var "x")
-          (TVar "a" `tlam` (TVar "a" `tlam` TVar "b") `tlam` TVar "b")
-          `shouldReturn` Right (TVar "a" `tlam` (TVar "a" `tlam` TVar "b") `tlam` TVar "b")
+          ("x" *->> "f" *->> var "f" `call` var "x")
+          (tvar "a" `tlam` (tvar "a" `tlam` tvar "b") `tlam` tvar "b")
+          `shouldReturn` Right (tvar "a" `tlam` (tvar "a" `tlam` tvar "b") `tlam` tvar "b")
         check
-          ("x" *->> "f" *->> Var "f" `call` Var "x")
+          ("x" *->> "f" *->> var "f" `call` var "x")
           (TInt `tlam` (TInt `tlam` TString) `tlam` TString)
           `shouldReturn` Right (TInt `tlam` (TInt `tlam` TString) `tlam` TString)
         check
-          ("x" *->> "f" *->> Var "f" `call` Var "x")
+          ("x" *->> "f" *->> var "f" `call` var "x")
           (TString `tlam` (TInt `tlam` TString) `tlam` TString)
           `shouldReturn` Left (unificationErrorMessage TInt TString)
 
       it "should use inferred type when explicit type is unknown" $ do
         check (int 5) TUnknown `shouldReturn` Right TInt
         check (str "x") TUnknown `shouldReturn` Right TString
-        check ("x" *->> "f" *->> Var "f" `call` Var "x") TUnknown
-          `shouldReturn` Right (TVar "a0" `tlam` (TVar "a0" `tlam` TVar "a2") `tlam` TVar "a2")
+        check ("x" *->> "f" *->> var "f" `call` var "x") TUnknown
+          `shouldReturn` Right (tvar "a0" `tlam` (tvar "a0" `tlam` tvar "a2") `tlam` tvar "a2")
 
       it "should check types for if-else" $ do
         check (IfElse (bool True) (int 5) (int 6)) TUnknown `shouldReturn` Right TInt
@@ -46,16 +46,16 @@ tests =
         it "should infer types of recursive functions" $ do
           let recursiveExpr =
                 Let
-                  [ DefSignature "gte" (TInt `tlam` TInt `tlam` TBool),
-                    DefSignature "sub" (TInt `tlam` TInt `tlam` TInt),
-                    DefValue "fact" $
+                  [ defSig "gte" (TInt `tlam` TInt `tlam` TBool),
+                    defSig "sub" (TInt `tlam` TInt `tlam` TInt),
+                    defVal "fact" $
                       "x"
                         *->> IfElse
-                          (Var "gte" `call` Var "x" `call` int 1)
-                          (Var "fact" `call` (Var "sub" `call` Var "x" `call` int 1))
+                          (var "gte" `call` var "x" `call` int 1)
+                          (var "fact" `call` (var "sub" `call` var "x" `call` int 1))
                           (int 1)
                   ]
-                  (Var "fact" `call` int 5)
+                  (var "fact" `call` int 5)
           check recursiveExpr TInt `shouldReturn` Right TInt
           check recursiveExpr TString `shouldReturn` Left (unificationErrorMessage TString TInt)
 
@@ -86,33 +86,33 @@ tests =
       describe "functions" $ do
         it "should infer lambda types" $ do
           infer ("x" *->> Literal (LiteralFloat 0.0))
-            `shouldReturn` Right (TLambda (TVar "a0") TFloat)
+            `shouldReturn` Right (TLambda (tvar "a0") TFloat)
           infer ("x" *->> "y" *->> Literal (LiteralFloat 0.0))
-            `shouldReturn` Right (TVar "a0" `tlam` TVar "a1" `tlam` TFloat)
-          infer ("x" *->> "y" *->> Var "y")
-            `shouldReturn` Right (TVar "a0" `tlam` TVar "a1" `tlam` TVar "a1")
-          infer ("x" *->> "y" *->> Var "x")
-            `shouldReturn` Right (TVar "a0" `tlam` TVar "a1" `tlam` TVar "a0")
+            `shouldReturn` Right (tvar "a0" `tlam` tvar "a1" `tlam` TFloat)
+          infer ("x" *->> "y" *->> var "y")
+            `shouldReturn` Right (tvar "a0" `tlam` tvar "a1" `tlam` tvar "a1")
+          infer ("x" *->> "y" *->> var "x")
+            `shouldReturn` Right (tvar "a0" `tlam` tvar "a1" `tlam` tvar "a0")
 
         it "should infer function application" $ do
           infer (("x" *->> Literal (LiteralInt 3)) `call` Literal (LiteralFloat 0.0))
             `shouldReturn` Right TInt
-          infer (("x" *->> Var "x") `call` Literal (LiteralFloat 0.0))
+          infer (("x" *->> var "x") `call` Literal (LiteralFloat 0.0))
             `shouldReturn` Right TFloat
-          infer (("x" *->> "y" *->> Var "y") `call` Literal (LiteralFloat 0.0))
-            `shouldReturn` Right (TLambda (TVar "a2") (TVar "a2"))
+          infer (("x" *->> "y" *->> var "y") `call` Literal (LiteralFloat 0.0))
+            `shouldReturn` Right (TLambda (tvar "a2") (tvar "a2"))
           infer
             ( Let
-                [ DefValue "x" (Literal . LiteralInt $ 200),
-                  DefValue "id" ("x" *->> Var "x")
+                [ defVal "x" (Literal . LiteralInt $ 200),
+                  defVal "id" ("x" *->> var "x")
                 ]
-                (Var "id" `call` Var "x")
+                (var "id" `call` var "x")
             )
             `shouldReturn` Right TInt
-          infer ("fn" *->> "x" *->> Var "fn" `call` Var "x")
-            `shouldReturn` Right ((TVar "a1" `tlam` TVar "a2") `tlam` TVar "a1" `tlam` TVar "a2")
+          infer ("fn" *->> "x" *->> var "fn" `call` var "x")
+            `shouldReturn` Right ((tvar "a1" `tlam` tvar "a2") `tlam` tvar "a1" `tlam` tvar "a2")
           infer
-            ("fn" *->> "pair" *->> Var "pair" `call` (Var "fn" `call` str "val") `call` (Var "fn" `call` int 5))
+            ("fn" *->> "pair" *->> var "pair" `call` (var "fn" `call` str "val") `call` (var "fn" `call` int 5))
             `shouldReturn` Left "unable to unify types: TString and TInt"
 
       describe "ifElse conditions" $ do
@@ -121,20 +121,20 @@ tests =
           infer (IfElse (bool True) (float 5) (float 6)) `shouldReturn` Right TFloat
 
       it "should error out for invalid variables" $ do
-        infer (Var "foobar")
-          `shouldReturn` Left (unboundVarErrorMessage "foobar")
-        infer ("x" *->> Var "x1")
-          `shouldReturn` Left (unboundVarErrorMessage "x1")
+        infer (var "foobar")
+          `shouldReturn` Left (unboundVarErrorMessage . IdentifierName $ "foobar")
+        infer ("x" *->> var "x1")
+          `shouldReturn` Left (unboundVarErrorMessage . IdentifierName $ "x1")
 
       it "should infer types from let bindings" $ do
-        infer (Let [DefValue "x" (Literal . LiteralInt $ 200)] (Var "x"))
+        infer (Let [defVal "x" (Literal . LiteralInt $ 200)] (var "x"))
           `shouldReturn` Right TInt
         infer
           ( Let
-              [ DefValue "x" (Literal . LiteralInt $ 200),
-                DefValue "id" ("x" *->> Var "x")
+              [ defVal "x" (Literal . LiteralInt $ 200),
+                defVal "id" ("x" *->> var "x")
               ]
-              (Var "id" `call` Var "x")
+              (var "id" `call` var "x")
           )
           `shouldReturn` Right TInt
 
@@ -142,51 +142,51 @@ tests =
         it "should verify type signatures match inferred types" $ do
           infer
             ( Let
-                [ DefSignature "id" $ TInt `tlam` TInt,
-                  DefValue "id" ("x" *->> Var "x")
+                [ defSig "id" $ TInt `tlam` TInt,
+                  defVal "id" ("x" *->> var "x")
                 ]
-                (Var "id")
+                (var "id")
             )
             `shouldReturn` Right (TInt `tlam` TInt)
           infer
             ( Let
-                [ DefValue "id" ("x" *->> Var "x"),
-                  DefSignature "id" $ TInt `tlam` TInt
+                [ defVal "id" ("x" *->> var "x"),
+                  defSig "id" $ TInt `tlam` TInt
                 ]
-                (Var "id")
+                (var "id")
             )
             `shouldReturn` Right (TInt `tlam` TInt)
           infer
             ( Let
-                [ DefSignature "tup" $ TTuple [TInt, TString],
-                  DefValue "tup" (tuple [int 1, float 3.0])
+                [ defSig "tup" $ TTuple [TInt, TString],
+                  defVal "tup" (tuple [int 1, float 3.0])
                 ]
-                (Var "tup")
+                (var "tup")
             )
             `shouldReturn` Left (unificationErrorMessage TString TFloat)
           infer
             ( Let
-                [ DefSignature "tup" $ TTuple [TInt, TFloat, TString],
-                  DefValue "tup" (tuple [int 1, float 3.0])
+                [ defSig "tup" $ TTuple [TInt, TFloat, TString],
+                  defVal "tup" (tuple [int 1, float 3.0])
                 ]
-                (Var "tup")
+                (var "tup")
             )
             `shouldReturn` Left (unificationErrorMessage (TTuple [TInt, TFloat, TString]) (TTuple [TInt, TFloat]))
           infer
             ( Let
-                [ DefSignature "tup" $ TTuple [TInt, TFloat, TString],
-                  DefValue "tup" (tuple [int 1, float 3.0, str "x"])
+                [ defSig "tup" $ TTuple [TInt, TFloat, TString],
+                  defVal "tup" (tuple [int 1, float 3.0, str "x"])
                 ]
-                (Var "tup")
+                (var "tup")
             )
             `shouldReturn` Right (TTuple [TInt, TFloat, TString])
         it "should error out if type signature doesn't match inferred type" $ do
           infer
             ( Let
-                [ DefValue "id" ("x" *->> Var "x"),
-                  DefSignature "id" $ TInt `tlam` TString
+                [ defVal "id" ("x" *->> var "x"),
+                  defSig "id" $ TInt `tlam` TString
                 ]
-                (Var "id")
+                (var "id")
             )
             `shouldReturn` Left (unificationErrorMessage TString TInt)
 

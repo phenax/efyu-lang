@@ -2,7 +2,7 @@ module TestHelpers where
 
 import Efyu.Types
 
-(*->>) = Lambda
+(*->>) = Lambda . IdentifierName
 
 tlam = TLambda
 
@@ -23,3 +23,11 @@ bool = Literal . LiteralBool
 tuple = Literal . LiteralTuple
 
 list = Literal . LiteralList
+
+var = Var . IdentifierName
+
+tvar = TVar . IdentifierName
+
+defVal = DefValue . IdentifierName
+
+defSig = DefSignature . IdentifierName

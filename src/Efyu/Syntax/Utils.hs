@@ -4,6 +4,7 @@ import Control.Monad (void)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (fromMaybe)
 import Data.Void (Void)
+import Efyu.Types
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -48,6 +49,16 @@ float = fl <|> L.signed sc fl
 reservedKeywords :: [String]
 reservedKeywords = ["let", "in", "if", "then", "else"]
 
+varIdentifier :: MParser (IdentifierName 'VarName)
+varIdentifier = IdentifierName <$> identifier
+
+polyTypeIdentifier :: MParser (IdentifierName 'PolyTypeName)
+polyTypeIdentifier = IdentifierName <$> identifier
+
+typeIdentifier :: MParser (IdentifierName 'TypeName)
+typeIdentifier = IdentifierName <$> identifier
+
+-- TODO: Remove
 identifier :: MParser String
 identifier = do
   f <- letterChar

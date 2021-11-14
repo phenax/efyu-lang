@@ -38,17 +38,17 @@ literalP = Literal <$> p
                 <* L.symbol scnl "]"
           )
 
-parameter :: MParser String
-parameter = identifier
+parameter :: MParser (IdentifierName 'VarName)
+parameter = varIdentifier
 
 varP :: MParser Expression
-varP = Var <$> lexeme identifier
+varP = Var <$> lexeme varIdentifier
 
 definitionP :: MParser Definition
 definitionP = try defP <|> typeAnnotationP
   where
     defP = withLineFold $ \sp -> do
-      name <- identifier <* sp
+      name <- varIdentifier <* sp
       params <- (parameter <* sp) `manyTill` char '='
       body <- sp >> expressionP
       optional (char ';')
