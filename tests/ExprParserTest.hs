@@ -400,10 +400,18 @@ tests = do
       tp [r|name : Int |] `shouldParse` DefSignature "name" TInt
       tp [r|name : Bool |] `shouldParse` DefSignature "name" TBool
       tp [r|name : Float|] `shouldParse` DefSignature "name" TFloat
+      tp [r|name : (Int, Float)|] `shouldParse` DefSignature "name" (TTuple [TInt, TFloat])
     it "should parse lambda types" $ do
       tp [r|fn : String -> Int |] `shouldParse` DefSignature "fn" (TString `tlam` TInt)
       tp [r|fn: Bool -> String -> Int |] `shouldParse` DefSignature "fn" (TBool `tlam` TString `tlam` TInt)
+      tp [r|fn : (Bool -> String) -> Int |] `shouldParse` DefSignature "fn" ((TBool `tlam` TString) `tlam` TInt)
+      tp [r|fn : Bool -> (String -> Int) |] `shouldParse` DefSignature "fn" (TBool `tlam` TString `tlam` TInt)
+      tp [r|fn : Bool -> ((String) -> Int) |] `shouldParse` DefSignature "fn" (TBool `tlam` TString `tlam` TInt)
+      tp [r|fn : Bool -> ((a -> b) -> Int) |]
+        `shouldParse` DefSignature "fn" (TBool `tlam` (TVar "a" `tlam` TVar "b") `tlam` TInt)
       tp [r|fn: a -> b -> c |] `shouldParse` DefSignature "fn" (TVar "a" `tlam` TVar "b" `tlam` TVar "c")
+      tp [r|fn : a -> (Int, Float)|] `shouldParse` DefSignature "fn" (TVar "a" `tlam` TTuple [TInt, TFloat])
+      tp [r|fn : (Int, Float) -> b|] `shouldParse` DefSignature "fn" (TTuple [TInt, TFloat] `tlam` TVar "b")
 
   describe "if-then-else" $ do
     it "should parse if expressions" $ do

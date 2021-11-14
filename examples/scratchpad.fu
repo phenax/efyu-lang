@@ -6,11 +6,9 @@
 id : a -> a
 id x = x
 
-lte : Int -> Int -> Bool
+lte? : Int -> Int -> Bool
 add : Int -> Int -> Int
 sub : Int -> Int -> Int
-
-pair : a -> b -> b -- TODO: Add pair literal
 
 null? : [a] -> Bool
 head : [a] -> a
@@ -29,18 +27,19 @@ myList = [1,2,3,4,5,6]
 
 fibo : Int -> Int
 fibo n =
-  if (lte n 1) then
+  if (lte? n 1) then
     1
   else
     add
       (fibo (sub n 1))
       (fibo (sub n 2))
 
+n = 5
+
 main =
   let
-    n = 5
     result = fibo n
     newList = mapList (add 5) (mapList id myList)
-  in pair result newList
+  in (result, newList, prepend 5 [])
 
 --

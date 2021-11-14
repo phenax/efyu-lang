@@ -46,8 +46,8 @@ tests =
         it "should infer types of recursive functions" $ do
           let recursiveExpr =
                 Let
-                  [ DefValue "gte" ("x" *->> "y" *->> bool True),
-                    DefValue "sub" ("x" *->> "y" *->> int 2),
+                  [ DefSignature "gte" (TInt `tlam` TInt `tlam` TBool),
+                    DefSignature "sub" (TInt `tlam` TInt `tlam` TInt),
                     DefValue "fact" $
                       "x"
                         *->> IfElse
@@ -156,6 +156,14 @@ tests =
                 (Var "id")
             )
             `shouldReturn` Right (TInt `tlam` TInt)
+          infer
+            ( Let
+                [ DefSignature "tup" $ TTuple [TInt, TString],
+                  DefValue "tup" (tuple [int 1, float 3.0])
+                ]
+                (Var "tup")
+            )
+            `shouldReturn` Left (unificationErrorMessage TString TFloat)
           infer
             ( Let
                 [ DefSignature "tup" $ TTuple [TInt, TFloat, TString],

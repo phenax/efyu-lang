@@ -10,10 +10,10 @@ tListP sp = TList <$> p
   where
     p = L.symbol sc "[" >> typeP sp <* sc <* L.symbol sc "]"
 
--- tTupleP :: MParser () -> MParser Type
--- tTupleP sp = TList <$> p
---   where
---     p = L.symbol sc "(" >> typeP sp <* sc <* L.symbol sc ")"
+tTupleP :: MParser () -> MParser Type
+tTupleP sp = TTuple <$> p
+  where
+    p = L.symbol sc "(" >> (typeP sp `sepBy1` L.symbol sp ",") <* sc <* L.symbol sc ")"
 
 tNameP _sp = do
   name <- identifier
@@ -35,7 +35,11 @@ tLambdaP sp = do
     mergety (ty : tys) = TLambda ty $ mergety tys
 
 tAtomP :: MParser () -> MParser Type
-tAtomP sp = tNameP sp <|> tListP sp <|> (try . parens $ tLambdaP sp)
+tAtomP sp =
+  (try . withOptionalParens $ tNameP sp)
+    <|> tListP sp
+    <|> (try . parens $ tLambdaP sp)
+    <|> tTupleP sp
   where
     parens = withParens
 
