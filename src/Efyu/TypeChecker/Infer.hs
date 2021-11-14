@@ -11,7 +11,6 @@ import Efyu.TypeChecker.Env
 import Efyu.TypeChecker.FreeTypeVars
 import Efyu.TypeChecker.Utils
 import Efyu.Types
-import Efyu.Utils (debugM)
 
 type TI = WithEnv (ExceptT String IO)
 
@@ -95,19 +94,15 @@ inferExpressionType' :: Expression -> TI (TypeSubst, Type)
 inferExpressionType' = \case
   Literal lit -> (Map.empty,) <$> inferLiteralType lit
   Lambda param body -> do
-    tv <- newTypeVar "a"
-    -- env <- getEnv
-    let newVal = Map.singleton param (TypeScheme [] tv)
+    typeVar <- newTypeVar "a"
+    let newVal = Map.singleton param (TypeScheme [] typeVar)
     (bodySubst, bodyType) <- withValues newVal $ inferExpressionType' body
-    debugM ("lambda body", bodySubst, apply bodySubst tv)
-    pure (bodySubst, TLambda (apply bodySubst tv) bodyType)
+    pure (bodySubst, TLambda (apply bodySubst typeVar) bodyType)
   Apply lambda param -> do
     typeVar <- newTypeVar "a"
-    env <- getEnv
     (sl, tl) <- inferExpressionType' lambda
-    (sp, tp) <-
-      withValues (envValues $ apply sl env) $
-        inferExpressionType' param
+    modifyEnv $ apply sl -- NOTE: not sure if this should be scoped to the parameter
+    (sp, tp) <- inferExpressionType' param
     sres <- unify (apply sp tl) (TLambda tp typeVar)
     pure (sres `composeSubst` sp `composeSubst` sl, apply sres typeVar)
   Var name -> do

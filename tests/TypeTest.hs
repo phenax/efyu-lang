@@ -110,10 +110,13 @@ tests =
             `shouldReturn` Right TInt
           infer ("fn" *->> "x" *->> var "fn" `call` var "x")
             `shouldReturn` Right ((tvar "'a1" `tlam` tvar "'a2") `tlam` tvar "'a1" `tlam` tvar "'a2")
-        fit "tmp" $ do
+        it "tmp" $ do
           infer
-            ("fn" *->> tuple [var "fn" `call` str "val", var "fn" `call` int 5])
+            ("fn" *->> "pair" *->> var "pair" `call` (var "fn" `call` str "val") `call` (var "fn" `call` int 5))
             `shouldReturn` Left "unable to unify types: TString and TInt"
+      -- infer
+      --   ("fn" *->> tuple [var "fn" `call` str "val", var "fn" `call` int 5])
+      --   `shouldReturn` Left "unable to unify types: TString and TInt"
 
       describe "ifElse conditions" $ do
         it "should infer types for if-else" $ do

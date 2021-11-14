@@ -91,6 +91,6 @@ instance FreeTypeVar TypeScheme where
 
 instance FreeTypeVar TypeEnv where
   freeTypeVars = freeTypeVars . Map.elems . envValues
-  apply st env = env {envValues = Map.map (apply st) . envValues $ env}
+  apply st = updateValues $ Map.map (apply st)
 
 --
