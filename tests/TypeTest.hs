@@ -32,7 +32,7 @@ tests =
         check (int 5) TUnknown `shouldReturn` Right TInt
         check (str "x") TUnknown `shouldReturn` Right TString
         check ("x" *->> "f" *->> var "f" `call` var "x") TUnknown
-          `shouldReturn` Right (tvar "a0" `tlam` (tvar "a0" `tlam` tvar "a2") `tlam` tvar "a2")
+          `shouldReturn` Right (tvar "'a0" `tlam` (tvar "'a0" `tlam` tvar "'a2") `tlam` tvar "'a2")
 
       it "should check types for if-else" $ do
         check (IfElse (bool True) (int 5) (int 6)) TUnknown `shouldReturn` Right TInt
@@ -86,13 +86,13 @@ tests =
       describe "functions" $ do
         it "should infer lambda types" $ do
           infer ("x" *->> Literal (LiteralFloat 0.0))
-            `shouldReturn` Right (TLambda (tvar "a0") TFloat)
+            `shouldReturn` Right (TLambda (tvar "'a0") TFloat)
           infer ("x" *->> "y" *->> Literal (LiteralFloat 0.0))
-            `shouldReturn` Right (tvar "a0" `tlam` tvar "a1" `tlam` TFloat)
+            `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a1" `tlam` TFloat)
           infer ("x" *->> "y" *->> var "y")
-            `shouldReturn` Right (tvar "a0" `tlam` tvar "a1" `tlam` tvar "a1")
+            `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a1" `tlam` tvar "'a1")
           infer ("x" *->> "y" *->> var "x")
-            `shouldReturn` Right (tvar "a0" `tlam` tvar "a1" `tlam` tvar "a0")
+            `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a1" `tlam` tvar "'a0")
 
         it "should infer function application" $ do
           infer (("x" *->> Literal (LiteralInt 3)) `call` Literal (LiteralFloat 0.0))
@@ -100,7 +100,7 @@ tests =
           infer (("x" *->> var "x") `call` Literal (LiteralFloat 0.0))
             `shouldReturn` Right TFloat
           infer (("x" *->> "y" *->> var "y") `call` Literal (LiteralFloat 0.0))
-            `shouldReturn` Right (TLambda (tvar "a2") (tvar "a2"))
+            `shouldReturn` Right (TLambda (tvar "'a2") (tvar "'a2"))
           infer
             ( Let
                 [ defVal "x" (Literal . LiteralInt $ 200),
@@ -110,7 +110,7 @@ tests =
             )
             `shouldReturn` Right TInt
           infer ("fn" *->> "x" *->> var "fn" `call` var "x")
-            `shouldReturn` Right ((tvar "a1" `tlam` tvar "a2") `tlam` tvar "a1" `tlam` tvar "a2")
+            `shouldReturn` Right ((tvar "'a1" `tlam` tvar "'a2") `tlam` tvar "'a1" `tlam` tvar "'a2")
           infer
             ("fn" *->> "pair" *->> var "pair" `call` (var "fn" `call` str "val") `call` (var "fn" `call` int 5))
             `shouldReturn` Left "unable to unify types: TString and TInt"

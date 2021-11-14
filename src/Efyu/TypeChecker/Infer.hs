@@ -31,11 +31,11 @@ runTI t = do
     run = runExceptT . flip runStateT 0
 
 -- | Create a new type variable
-newTypeVar :: Identifier -> TI Type
+newTypeVar :: String -> TI Type
 newTypeVar prefix = do
   s <- get
   put $ s + 1
-  pure . TVar . IdentifierName $ prefix ++ show s
+  pure . TVar . IdentifierName $ "'" ++ prefix ++ show s -- Prefix it with ' to prevent overwriting
 
 -- | Unify two types and return substitutions
 unify :: Type -> Type -> TI TypeSubst

@@ -9,8 +9,6 @@ data Literal
   | LiteralTuple [Expression]
   deriving (Show, Eq)
 
-type Identifier = String
-
 -- | Set of identifier types
 data IdentifierType = VarName | PolyTypeName | TypeName | ContructorName
 
