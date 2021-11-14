@@ -1,10 +1,10 @@
 module Efyu.TypeChecker.Infer where
 
-import Control.Monad (foldM, void)
+import Control.Monad (foldM, void, zipWithM)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.State
-import Data.List (sortBy)
+import Data.List (foldl', sortBy)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Efyu.Syntax.Block
@@ -46,7 +46,9 @@ unify t t' = case (t, t') of
   (TUnknown, _) -> pure Map.empty
   (_, TUnknown) -> pure Map.empty
   (TList a, TList b) -> unify a b
-  -- TODO: TTuple
+  (TTuple as, TTuple bs)
+    | length as == length bs ->
+      foldl' composeSubst Map.empty <$> zipWithM unify as bs
   (TLambda p r, TLambda p' r') -> do
     st <- unify p p'
     st' <- unify (apply st r) (apply st r')

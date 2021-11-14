@@ -156,6 +156,22 @@ tests =
                 (Var "id")
             )
             `shouldReturn` Right (TInt `tlam` TInt)
+          infer
+            ( Let
+                [ DefSignature "tup" $ TTuple [TInt, TFloat, TString],
+                  DefValue "tup" (tuple [int 1, float 3.0])
+                ]
+                (Var "tup")
+            )
+            `shouldReturn` Left (unificationErrorMessage (TTuple [TInt, TFloat, TString]) (TTuple [TInt, TFloat]))
+          infer
+            ( Let
+                [ DefSignature "tup" $ TTuple [TInt, TFloat, TString],
+                  DefValue "tup" (tuple [int 1, float 3.0, str "x"])
+                ]
+                (Var "tup")
+            )
+            `shouldReturn` Right (TTuple [TInt, TFloat, TString])
         it "should error out if type signature doesn't match inferred type" $ do
           infer
             ( Let
