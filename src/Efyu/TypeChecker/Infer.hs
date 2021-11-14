@@ -46,6 +46,7 @@ unify t t' = case (t, t') of
   (TUnknown, _) -> pure Map.empty
   (_, TUnknown) -> pure Map.empty
   (TList a, TList b) -> unify a b
+  -- TODO: TTuple
   (TLambda p r, TLambda p' r') -> do
     st <- unify p p'
     st' <- unify (apply st r) (apply st r')
@@ -86,6 +87,11 @@ inferLiteralType env = \case
       unifyE :: Type -> Expression -> TI Type
       unifyE t1 expr =
         inferExpressionType env expr >>= (\t2 -> higherSp t1 t2 <$ unify t1 t2)
+  LiteralTuple [] -> pure TUnknown -- TODO: Invalid case (maybe unit)
+  LiteralTuple exprs -> TTuple <$> foldM unifyE [] exprs
+    where
+      unifyE :: [Type] -> Expression -> TI [Type]
+      unifyE ts expr = (\t -> ts ++ [t]) <$> inferExpressionType env expr
 
 inferExpressionType :: TypeEnv -> Expression -> TI Type
 inferExpressionType env expr = do

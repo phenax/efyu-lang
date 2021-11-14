@@ -19,3 +19,7 @@ str = Literal . LiteralString
 float = Literal . LiteralFloat
 
 bool = Literal . LiteralBool
+
+tuple = Literal . LiteralTuple
+
+list = Literal . LiteralList

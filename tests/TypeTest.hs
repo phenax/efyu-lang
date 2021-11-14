@@ -75,6 +75,13 @@ tests =
             `shouldReturn` Left (unificationErrorMessage TInt TString)
           infer (Literal $ LiteralList [str "wow", float 3.0])
             `shouldReturn` Left (unificationErrorMessage TString TFloat)
+        it "should infer tuple literals" $ do
+          infer (Literal $ LiteralTuple []) `shouldReturn` Right TUnknown
+          infer (Literal $ LiteralTuple [int 5]) `shouldReturn` Right (TTuple [TInt])
+          infer (Literal $ LiteralTuple [float 5.0, float 5.0]) `shouldReturn` Right (TTuple [TFloat, TFloat])
+          infer (Literal $ LiteralTuple [int 5, float 5.0]) `shouldReturn` Right (TTuple [TInt, TFloat])
+          infer (Literal $ LiteralTuple [int 5, str "wow", float 5.0])
+            `shouldReturn` Right (TTuple [TInt, TString, TFloat])
 
       describe "functions" $ do
         it "should infer lambda types" $ do

@@ -10,6 +10,11 @@ tListP sp = TList <$> p
   where
     p = L.symbol sc "[" >> typeP sp <* sc <* L.symbol sc "]"
 
+-- tTupleP :: MParser () -> MParser Type
+-- tTupleP sp = TList <$> p
+--   where
+--     p = L.symbol sc "(" >> typeP sp <* sc <* L.symbol sc ")"
+
 tNameP _sp = do
   name <- identifier
   -- TODO: Product types

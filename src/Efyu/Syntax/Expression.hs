@@ -12,17 +12,29 @@ import qualified Text.Megaparsec.Char.Lexer as L
 literalP :: MParser Expression
 literalP = Literal <$> p
   where
-    p = try floatP <|> intP <|> stringP <|> try boolP <|> listP
+    p = try tupleP <|> tryParens (try floatP <|> intP <|> stringP <|> try boolP <|> listP)
+    comma = L.symbol scnl ","
+    tryParens = try . withOptionalParens
+
     floatP = LiteralFloat <$> float
     intP = LiteralInt <$> integer
     stringP = LiteralString <$> insideQuotes
     boolP = LiteralBool . (== "True") <$> (symbol "True" <|> symbol "False")
+    tupleP =
+      LiteralTuple
+        <$> withLineFold
+          ( \sp -> do
+              x <- L.symbol sp "(" >> expressionP <* comma
+              xs <- (sp >> expressionP) `sepEndBy1` comma
+              L.symbol scnl ")"
+              pure $ x : xs
+          )
     listP =
       LiteralList
         <$> withLineFold
           ( \sp ->
               L.symbol sp "["
-                >> ((sp >> expressionP) `sepEndBy` L.symbol scnl ",")
+                >> ((sp >> expressionP) `sepEndBy` comma)
                 <* L.symbol scnl "]"
           )
 
@@ -85,7 +97,7 @@ expressionP :: MParser Expression
 expressionP = scnl >> p <* scnl
   where
     p =
-      (try . parens) literalP
+      try literalP
         <|> (try . parens) letBindingP
         <|> (try . parens) ifThenElseP
         <|> try applyP

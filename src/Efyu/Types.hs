@@ -6,6 +6,7 @@ data Literal
   | LiteralFloat Double
   | LiteralBool Bool
   | LiteralList [Expression]
+  | LiteralTuple [Expression]
   deriving (Show, Eq)
 
 type Identifier = String
@@ -32,5 +33,6 @@ data Type
   | TBool
   | TVar String
   | TList Type
+  | TTuple [Type]
   | TUnknown
   deriving (Show, Eq)
