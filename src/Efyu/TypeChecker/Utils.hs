@@ -1,31 +1,6 @@
 module Efyu.TypeChecker.Utils where
 
-import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set
 import Efyu.Types
-import Efyu.Utils (mapDeleteKeys)
-
--- type variable names
-type TypeVars = Set.Set (IdentifierName PolyTypeName)
-
--- substitutions
-type TypeSubst = Map.Map (IdentifierName PolyTypeName) Type
-
--- Polymorphic set of vars (forall a, b, c. Type)
-data TypeScheme = TypeScheme [IdentifierName PolyTypeName] Type deriving (Show)
-
--- type definitions map (name -> scheme)
-type TypeEnv = Map.Map (IdentifierName VarName) TypeScheme
-
--- data TypeEnv' = TypeEnv'
---   { envValues :: Map.Map (IdentifierName VarName) TypeScheme,
---     envTypes :: Map.Map (IdentifierName TypeName) TypeScheme,
---     envContructors :: Map.Map (IdentifierName ContructorName) TypeScheme
---   }
-
-composeSubst :: TypeSubst -> TypeSubst -> TypeSubst
-composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1
 
 specificity :: Type -> Type -> Ordering
 specificity TUnknown _ = LT
@@ -34,34 +9,5 @@ specificity _ _ = EQ
 
 higherSp :: Type -> Type -> Type
 higherSp t1 t2 = case specificity t1 t2 of LT -> t2; _ -> t1
-
-class FreeTypeVar a where
-  -- | Get a set of all free type variables
-  freeTypeVars :: a -> TypeVars
-
-  -- | Apply a substitution on a type and get a new type
-  apply :: TypeSubst -> a -> a
-
-instance FreeTypeVar Type where
-  freeTypeVars = \case
-    TVar name -> Set.singleton name
-    TLambda p r -> Set.union (freeTypeVars p) (freeTypeVars r)
-    _ -> Set.empty
-  apply sub = \case
-    TLambda p r -> TLambda (apply sub p) (apply sub r)
-    TVar n -> fromMaybe (TVar n) $ Map.lookup n sub
-    t -> t
-
-instance FreeTypeVar TypeScheme where
-  freeTypeVars (TypeScheme vars t) = Set.difference (freeTypeVars t) (Set.fromList vars)
-  apply s (TypeScheme vars t) = TypeScheme vars (apply (mapDeleteKeys vars s) t)
-
-instance FreeTypeVar a => FreeTypeVar [a] where
-  apply = map . apply
-  freeTypeVars = foldr (Set.union . freeTypeVars) Set.empty
-
-instance FreeTypeVar TypeEnv where
-  freeTypeVars env = freeTypeVars (Map.elems env)
-  apply = Map.map . apply
 
 -----------------

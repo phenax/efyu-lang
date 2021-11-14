@@ -1,6 +1,5 @@
 module TypeTest where
 
-import qualified Data.Map as Map
 import Efyu.TypeChecker.Infer
 import Efyu.Types
 import Test.Hspec
@@ -9,7 +8,7 @@ import TestHelpers
 tests =
   describe "Type checker" $ do
     describe "Checker" $ do
-      let check e = runTI . fmap fst . checkExpressionType Map.empty e
+      let check e = runTI . fmap fst . checkExpressionType e
 
       it "should check for invalid type annotations" $ do
         check (int 5) TInt `shouldReturn` Right TInt
@@ -60,7 +59,7 @@ tests =
           check recursiveExpr TString `shouldReturn` Left (unificationErrorMessage TString TInt)
 
     describe "Inference" $ do
-      let infer = runTI . inferExpressionType Map.empty
+      let infer = runTI . inferExpressionType
 
       describe "literals" $ do
         it "should infer literal types" $ do
@@ -111,8 +110,9 @@ tests =
             `shouldReturn` Right TInt
           infer ("fn" *->> "x" *->> var "fn" `call` var "x")
             `shouldReturn` Right ((tvar "'a1" `tlam` tvar "'a2") `tlam` tvar "'a1" `tlam` tvar "'a2")
+        fit "tmp" $ do
           infer
-            ("fn" *->> "pair" *->> var "pair" `call` (var "fn" `call` str "val") `call` (var "fn" `call` int 5))
+            ("fn" *->> tuple [var "fn" `call` str "val", var "fn" `call` int 5])
             `shouldReturn` Left "unable to unify types: TString and TInt"
 
       describe "ifElse conditions" $ do

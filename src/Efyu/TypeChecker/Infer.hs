@@ -1,17 +1,19 @@
 module Efyu.TypeChecker.Infer where
 
-import Control.Monad (foldM, void, zipWithM)
+import Control.Monad (foldM, zipWithM)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Except
-import Control.Monad.Trans.State
 import Data.List (foldl', sortBy)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Efyu.Syntax.Block
+import Efyu.TypeChecker.Env
+import Efyu.TypeChecker.FreeTypeVars
 import Efyu.TypeChecker.Utils
 import Efyu.Types
+import Efyu.Utils (debugM)
 
-type TI = StateT Int (ExceptT String IO)
+type TI = WithEnv (ExceptT String IO)
 
 unificationErrorMessage :: Type -> Type -> String
 unificationErrorMessage t1 t2 =
@@ -24,18 +26,7 @@ occursCheckErrorMessage :: IdentifierName 'PolyTypeName -> String
 occursCheckErrorMessage (IdentifierName name) = "occur check failed: Type var " ++ name ++ " already exists"
 
 runTI :: TI a -> IO (Either String a)
-runTI t = do
-  res <- run t
-  pure $ fst <$> res
-  where
-    run = runExceptT . flip runStateT 0
-
--- | Create a new type variable
-newTypeVar :: String -> TI Type
-newTypeVar prefix = do
-  s <- get
-  put $ s + 1
-  pure . TVar . IdentifierName $ "'" ++ prefix ++ show s -- Prefix it with ' to prevent overwriting
+runTI = runExceptT . runWithEnv
 
 -- | Unify two types and return substitutions
 unify :: Type -> Type -> TI TypeSubst
@@ -78,8 +69,8 @@ generalize env t = flip TypeScheme t . Set.toList $ freeTypes
     freeTypes = Set.difference (freeTypeVars t) (freeTypeVars env)
 
 -- | Infer types of literals
-inferLiteralType :: TypeEnv -> Literal -> TI Type
-inferLiteralType env = \case
+inferLiteralType :: Literal -> TI Type
+inferLiteralType = \case
   LiteralInt _ -> pure TInt
   LiteralString _ -> pure TString
   LiteralBool _ -> pure TBool
@@ -88,102 +79,113 @@ inferLiteralType env = \case
     where
       unifyE :: Type -> Expression -> TI Type
       unifyE t1 expr =
-        inferExpressionType env expr >>= (\t2 -> higherSp t1 t2 <$ unify t1 t2)
+        inferExpressionType expr >>= (\t2 -> higherSp t1 t2 <$ unify t1 t2)
   LiteralTuple [] -> pure TUnknown -- TODO: Invalid case (maybe unit)
   LiteralTuple exprs -> TTuple <$> foldM unifyE [] exprs
     where
       unifyE :: [Type] -> Expression -> TI [Type]
-      unifyE ts expr = (\t -> ts ++ [t]) <$> inferExpressionType env expr
+      unifyE ts expr = (\t -> ts ++ [t]) <$> inferExpressionType expr
 
-inferExpressionType :: TypeEnv -> Expression -> TI Type
-inferExpressionType env expr = do
-  (subst, ty) <- inferExpressionType' env expr
+inferExpressionType :: Expression -> TI Type
+inferExpressionType expr = do
+  (subst, ty) <- inferExpressionType' expr
   pure $ apply subst ty
 
-inferExpressionType' :: TypeEnv -> Expression -> TI (TypeSubst, Type)
-inferExpressionType' env = \case
-  Literal lit -> (Map.empty,) <$> inferLiteralType env lit
+inferExpressionType' :: Expression -> TI (TypeSubst, Type)
+inferExpressionType' = \case
+  Literal lit -> (Map.empty,) <$> inferLiteralType lit
   Lambda param body -> do
     tv <- newTypeVar "a"
-    let env' = Map.insert param (TypeScheme [] tv) env
-    (bodySubst, bodyType) <- inferExpressionType' env' body
+    -- env <- getEnv
+    let newVal = Map.singleton param (TypeScheme [] tv)
+    (bodySubst, bodyType) <- withValues newVal $ inferExpressionType' body
+    debugM ("lambda body", bodySubst, apply bodySubst tv)
     pure (bodySubst, TLambda (apply bodySubst tv) bodyType)
   Apply lambda param -> do
     typeVar <- newTypeVar "a"
-    (sl, tl) <- inferExpressionType' env lambda
-    (sp, tp) <- inferExpressionType' (apply sl env) param
+    env <- getEnv
+    (sl, tl) <- inferExpressionType' lambda
+    (sp, tp) <-
+      withValues (envValues $ apply sl env) $
+        inferExpressionType' param
     sres <- unify (apply sp tl) (TLambda tp typeVar)
     pure (sres `composeSubst` sp `composeSubst` sl, apply sres typeVar)
-  Var name ->
-    case Map.lookup name env of
+  Var name -> do
+    resMaybe <- lookupValue name
+    case resMaybe of
       Nothing -> lift . throwE $ unboundVarErrorMessage name
-      Just scheme -> do
-        ty <- instantiate scheme
-        pure (Map.empty, ty)
+      Just scheme -> (Map.empty,) <$> instantiate scheme
   Let bindings body -> do
-    (stDefs, env') <- resolveDeclarationList env bindings
-    (stBody, tyBody) <- inferExpressionType' (apply stDefs env') body
+    stDefs <- resolveDeclarationList bindings
+    env <- getEnv
+    (stBody, tyBody) <- withValues (envValues $ apply stDefs env) $ inferExpressionType' body
     pure (stDefs `composeSubst` stBody, tyBody)
   IfElse cond ifE elseE -> do
-    (_, condT) <- inferExpressionType' env cond
+    (_, condT) <- inferExpressionType' cond
     unify condT TBool -- Check if condition is boolean
-    (ifSt, ifT) <- inferExpressionType' env ifE
-    (elseSt, elseT) <- inferExpressionType' env elseE
+    (ifSt, ifT) <- inferExpressionType' ifE
+    (elseSt, elseT) <- inferExpressionType' elseE
     subst <- unify ifT elseT
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
     pure (Map.empty, apply subst' $ higherSp ifT elseT)
 
-resolveDeclaration :: TypeEnv -> TypeSubst -> Definition -> TI (TypeSubst, TypeEnv)
-resolveDeclaration env st = \case
+resolveDeclaration :: TypeSubst -> Definition -> TI TypeSubst
+resolveDeclaration st = \case
   (DefSignature name ty) -> do
     let tsch = TypeScheme (Set.toList . freeTypeVars $ ty) ty
-    pure (st, Map.insert name tsch env)
+    modifyEnv $ updateValues (Map.insert name tsch)
+    pure st
   (DefValue name expr) -> do
     -- Create a temporary scheme (needed for recursive definitions)
-    typeDefn <- case Map.lookup name env of
+    tyMaybe <- lookupValue name
+    typeDefn <- case tyMaybe of
       Just ty' -> instantiate ty'
       Nothing -> pure TUnknown
 
+    env <- getEnv
     tmpTypeScheme <- generalize (apply st env) <$> newTypeVar "t"
-    let tmpEnv = Map.insert name tmpTypeScheme env
 
     -- Infer type using tmpEnv
-    (stBinding, tyBinding) <- inferExpressionType' tmpEnv expr
-    unify typeDefn tyBinding -- Check if previous definition (signature) matches inferred type
-    let properTypeScheme = generalize (apply st tmpEnv) (higherSp typeDefn tyBinding)
-    let properEnv = Map.insert name properTypeScheme env
+    (stBinding, properTypeScheme) <- withValues (Map.singleton name tmpTypeScheme) $ do
+      (stBinding, tyBinding) <- inferExpressionType' expr
+      -- Check if previous definition (signature) matches inferred type
+      unify typeDefn tyBinding
 
-    pure (st `Map.union` stBinding, properEnv)
+      curEnv <- getEnv
+      let properTypeScheme = generalize curEnv (higherSp typeDefn tyBinding)
+      pure (stBinding, properTypeScheme)
+
+    modifyEnv $ updateValues (Map.insert name properTypeScheme)
+    pure $ st `Map.union` stBinding
 
 -- | Resolve a set of bindings to a set of type substitutions and
-resolveDeclarationList :: TypeEnv -> [Definition] -> TI (TypeSubst, TypeEnv)
-resolveDeclarationList env = foldM getSubstEnv (Map.empty, env) . sortBy cmpDefinition
+resolveDeclarationList :: [Definition] -> TI TypeSubst
+resolveDeclarationList = foldM resolveDeclaration Map.empty . sortBy cmpDefinition
   where
-    getSubstEnv (st, env') def = resolveDeclaration env' st def
     cmpDefinition (DefSignature _ _) _ = LT
     cmpDefinition _ (DefSignature _ _) = GT
     cmpDefinition _ _ = EQ
 
 -- | Check if expression matches given type
-checkExpressionType :: TypeEnv -> Expression -> Type -> TI (Type, Expression)
-checkExpressionType env expr TUnknown = (,expr) <$> inferExpressionType env expr
-checkExpressionType env expr ty = do
-  ty' <- inferExpressionType env expr
+checkExpressionType :: Expression -> Type -> TI (Type, Expression)
+checkExpressionType expr TUnknown = (,expr) <$> inferExpressionType expr
+checkExpressionType expr ty = do
+  ty' <- inferExpressionType expr
   unify ty ty'
   pure (higherSp ty ty', expr)
 
 -- | Verify type signature of block
-checkBlockType :: TypeEnv -> Block -> Type -> TI TypeEnv
-checkBlockType env (Module _ blocks) _ = foldM accBlockEnv env blocks
+checkBlockType :: Block -> TI ()
+checkBlockType (Module _ blocks) = foldM accBlockEnv () blocks
   where
-    accBlockEnv env' b = checkBlockType env' b TUnknown
-checkBlockType env (Def def) _ = do
-  (st, env') <- resolveDeclaration env Map.empty def
-  pure $ apply st env'
+    accBlockEnv _ b = checkBlockType b
+checkBlockType (Def def) = do
+  st <- resolveDeclaration Map.empty def
+  modifyEnv $ apply st
 
 -- | Type check module (module block)
 checkModule :: Block -> TI ()
-checkModule b = void $ checkBlockType Map.empty b TUnknown
+checkModule = checkBlockType
 
 ---
 ---
