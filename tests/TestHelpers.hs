@@ -1,5 +1,6 @@
 module TestHelpers where
 
+import Efyu.Syntax.Block
 import Efyu.Types
 
 (*->>) = Lambda . IdentifierName
@@ -31,3 +32,7 @@ tvar = TVar . IdentifierName
 defVal = DefValue . IdentifierName
 
 defSig = DefSignature . IdentifierName
+
+typeAlias = TypeAliasDef . IdentifierName
+
+tname = TName . IdentifierName

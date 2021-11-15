@@ -1,12 +1,11 @@
 module Efyu.Syntax.Block where
 
 import Efyu.Syntax.Expression
+import Efyu.Syntax.TypeAnnotations
 import Efyu.Syntax.Utils
 import Efyu.Types
 import Text.Megaparsec
-import Text.Megaparsec.Char
-
--- import qualified Text.Megaparsec.Char.Lexer as L
+import qualified Text.Megaparsec.Char.Lexer as L
 
 data Block
   = Module String [Block]
@@ -17,15 +16,18 @@ data Block
 defineFnP :: MParser Block
 defineFnP = Def <$> definitionP
 
-definitionListP :: (MParser Block -> MParser Block) -> MParser [Block]
-definitionListP pre = (pre p `sepBy` many newline) <* scnl
-  where
-    p = defineFnP
+typeAliasP :: MParser Block
+typeAliasP = withLineFold $ \sp -> do
+  L.symbol sp "type" >> L.symbol sp "alias"
+  name <- typeIdentifier <* sp <* L.symbol sp "="
+  -- TODO: forall poly vars
+  ty <- typeP sp
+  pure $ TypeAliasDef name ty
 
--- moduleP :: MParser Block
--- moduleP = withLineFold $ \sp -> do -- TODO: Use indent block
---   name <- symbol "module" >> lexeme identifier <* symbol "where"
---   Module name <$> definitionListP sp
+blockDeclrP :: (MParser Block -> MParser Block) -> MParser [Block]
+blockDeclrP pre = (pre p `sepBy` scnl) <* scnl
+  where
+    p = (typeAliasP <* scnl) <|> try (defineFnP <* scnl) <?> "<declaration>"
 
 blockP :: String -> MParser Block
-blockP name = Module name <$> definitionListP nonIndented
+blockP name = Module name <$> blockDeclrP nonIndented

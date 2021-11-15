@@ -98,3 +98,19 @@ num a b = c
             Def $ defSig "num" $ TInt `tlam` TString `tlam` TBool,
             Def $ defVal "num" ("a" *->> "b" *->> var "c")
           ]
+
+  describe "custom type alias def" $ do
+    it "should parse definitions along with annotations" $ do
+      parse
+        [r|
+
+type alias DummyInt = Int
+
+foobar : DummyInt
+
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeAliasDef (IdentifierName "DummyInt") TInt,
+            Def $ defSig "foobar" (tname "DummyInt")
+          ]

@@ -16,14 +16,25 @@ tTupleP sp = TTuple <$> p
     p = L.symbol sc "(" >> (typeP sp `sepBy1` L.symbol sp ",") <* sc <* L.symbol sc ")"
 
 tNameP _sp = do
-  name <- polyTypeIdentifier
-  -- TODO: Split out types and polytypes
+  name <- typeIdentifier
   pure $ case name of
     IdentifierName "Int" -> TInt
     IdentifierName "Float" -> TFloat
     IdentifierName "String" -> TString
     IdentifierName "Bool" -> TBool
-    n -> TVar n
+    n -> TName n
+
+tVarP = TVar <$> polyTypeIdentifier
+
+tAtomP :: MParser () -> MParser Type
+tAtomP sp =
+  (try . withOptionalParens $ tNameP sp)
+    <|> (try . withOptionalParens $ tVarP)
+    <|> tListP sp
+    <|> (try . parens $ tLambdaP sp)
+    <|> tTupleP sp
+  where
+    parens = withParens
 
 tLambdaP :: MParser () -> MParser Type
 tLambdaP sp = do
@@ -33,15 +44,6 @@ tLambdaP sp = do
     mergety [] = undefined -- NOTE: Can't happen since sepBy1 guarentees nonempty
     mergety [ty] = ty
     mergety (ty : tys) = TLambda ty $ mergety tys
-
-tAtomP :: MParser () -> MParser Type
-tAtomP sp =
-  (try . withOptionalParens $ tNameP sp)
-    <|> tListP sp
-    <|> (try . parens $ tLambdaP sp)
-    <|> tTupleP sp
-  where
-    parens = withParens
 
 typeP :: MParser () -> MParser Type
 typeP sp = try (tLambdaP sp) <?> "<type>"

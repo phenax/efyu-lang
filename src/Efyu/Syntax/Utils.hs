@@ -47,21 +47,29 @@ float = fl <|> L.signed sc fl
       pure . read $ n ++ "." ++ dec
 
 reservedKeywords :: [String]
-reservedKeywords = ["let", "in", "if", "then", "else"]
+reservedKeywords = ["let", "in", "if", "then", "else", "type", "alias"]
 
 varIdentifier :: MParser (IdentifierName 'VarName)
-varIdentifier = IdentifierName <$> identifier
+varIdentifier = IdentifierName <$> lowerIdentifier
 
 polyTypeIdentifier :: MParser (IdentifierName 'PolyTypeName)
-polyTypeIdentifier = IdentifierName <$> identifier
+polyTypeIdentifier = IdentifierName <$> lowerIdentifier
 
 typeIdentifier :: MParser (IdentifierName 'TypeName)
-typeIdentifier = IdentifierName <$> identifier
+typeIdentifier = IdentifierName <$> upperIdentifier
 
--- TODO: Remove
-identifier :: MParser String
-identifier = do
-  f <- letterChar
+lowerIdentifier :: MParser String
+lowerIdentifier = do
+  f <- lowerChar
+  rest <- many (alphaNumChar <|> oneOf "_'?")
+  let name = f : rest
+  if name `elem` reservedKeywords
+    then unexpected $ Label (f :| rest)
+    else pure name
+
+upperIdentifier :: MParser String
+upperIdentifier = do
+  f <- upperChar
   rest <- many (alphaNumChar <|> oneOf "_'?")
   let name = f : rest
   if name `elem` reservedKeywords
