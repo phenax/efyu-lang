@@ -125,7 +125,7 @@ inferExpressionType' = \case
     (elseSt, elseT) <- inferExpressionType' elseE
     subst <- unify ifT elseT
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
-    pure (Map.empty, apply subst' $ higherSp ifT elseT)
+    pure (subst', apply subst' $ higherSp ifT elseT)
 
 resolveDeclaration :: TypeSubst -> Definition -> TI TypeSubst
 resolveDeclaration st = \case
