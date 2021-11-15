@@ -11,6 +11,7 @@ import Text.Megaparsec.Char
 data Block
   = Module String [Block]
   | Def Definition
+  | TypeAliasDef (IdentifierName 'TypeName) Type
   deriving (Show, Eq)
 
 defineFnP :: MParser Block

@@ -75,6 +75,13 @@ withValues names blockM = do
   modify $ updateValues (const $ envValues oldEnv)
   pure res
 
+defineTypeAliases :: (MonadIO m) => TypeMap -> WithEnv m ()
+defineTypeAliases tyMap =
+  modifyEnv $ \env -> env {envTypes = envTypes env `Map.union` tyMap}
+
+lookupType :: (MonadIO m) => IdentifierName 'TypeName -> WithEnv m (Maybe TypeScheme)
+lookupType name = Map.lookup name . envTypes <$> getEnv
+
 instance FreeTypeVar Type where
   freeTypeVars = \case
     TVar name -> Set.singleton name

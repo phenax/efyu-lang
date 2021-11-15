@@ -1,5 +1,6 @@
 module TypeTest where
 
+import Efyu.Syntax.Block
 import Efyu.TypeChecker.Infer
 import Efyu.Types
 import Test.Hspec
@@ -57,6 +58,19 @@ tests =
                   (var "fact" `call` int 5)
           check recursiveExpr TInt `shouldReturn` Right TInt
           check recursiveExpr TString `shouldReturn` Left (unificationErrorMessage TString TInt)
+
+      describe "Block modules" $ do
+        let checkM = runTI . checkBlockType
+        it "should infer types of recursive functions" $ do
+          checkM
+            ( Module
+                "Hello"
+                [ TypeAliasDef (IdentifierName "DummyInt") TInt,
+                  Def . DefSignature (IdentifierName "foobar") $ TName (IdentifierName "DummyInt"),
+                  Def . DefValue (IdentifierName "foobar") $ int 5
+                ]
+            )
+            `shouldReturn` Right ()
 
     describe "Inference" $ do
       let infer = runTI . inferExpressionType

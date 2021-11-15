@@ -37,6 +37,8 @@ unify t t' = case (t, t') of
   (TUnknown, _) -> pure Map.empty
   (_, TUnknown) -> pure Map.empty
   (TList a, TList b) -> unify a b
+  (TName name, ty) -> bindTypeName name ty
+  (ty, TName name) -> bindTypeName name ty
   (TTuple as, TTuple bs)
     | length as == length bs ->
       foldl' composeSubst Map.empty <$> zipWithM unify as bs
@@ -47,6 +49,11 @@ unify t t' = case (t, t') of
   (ty, ty') ->
     lift . throwE $ unificationErrorMessage ty ty'
   where
+    bindTypeName name ty = do
+      ty'M <- lookupType name
+      case ty'M of
+        Just tsch -> instantiate tsch >>= unify ty
+        Nothing -> pure Map.empty
     bindTypeVar :: IdentifierName 'PolyTypeName -> Type -> TI TypeSubst
     bindTypeVar name = \case
       TVar n | n == name -> pure Map.empty
@@ -180,6 +187,10 @@ checkBlockType (Module _ blocks) = foldM accBlockEnv () blocks
 checkBlockType (Def def) = do
   st <- resolveDeclaration Map.empty def
   modifyEnv $ apply st
+checkBlockType (TypeAliasDef name ty) = do
+  env <- getEnv
+  let tsch = generalize env ty
+  defineTypeAliases $ Map.singleton name tsch
 
 -- | Type check module (module block)
 checkModule :: Block -> TI ()
