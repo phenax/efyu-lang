@@ -3,6 +3,7 @@ module Efyu.TypeChecker.Infer where
 import Control.Monad (foldM, zipWithM)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Except
+import Data.Bifunctor (Bifunctor (second))
 import Data.List (foldl', sortBy)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -68,22 +69,26 @@ generalize env t = flip TypeScheme t . Set.toList $ freeTypes
     freeTypes = Set.difference (freeTypeVars t) (freeTypeVars env)
 
 -- | Infer types of literals
-inferLiteralType :: Literal -> TI Type
+inferLiteralType :: Literal -> TI (TypeSubst, Type)
 inferLiteralType = \case
-  LiteralInt _ -> pure TInt
-  LiteralString _ -> pure TString
-  LiteralBool _ -> pure TBool
-  LiteralFloat _ -> pure TFloat
-  LiteralList exprs -> TList <$> foldM unifyE TUnknown exprs
+  LiteralInt _ -> pure (Map.empty, TInt)
+  LiteralString _ -> pure (Map.empty, TString)
+  LiteralBool _ -> pure (Map.empty, TBool)
+  LiteralFloat _ -> pure (Map.empty, TFloat)
+  -- TODO: Fix substitutions
+  LiteralList exprs -> (Map.empty,) . TList <$> foldM unifyE TUnknown exprs
     where
       unifyE :: Type -> Expression -> TI Type
       unifyE t1 expr =
         inferExpressionType expr >>= (\t2 -> higherSp t1 t2 <$ unify t1 t2)
-  LiteralTuple [] -> pure TUnknown -- TODO: Invalid case (maybe unit)
-  LiteralTuple exprs -> TTuple <$> foldM unifyE [] exprs
+  LiteralTuple [] -> pure (Map.empty, TUnknown) -- TODO: Invalid case (maybe unit)
+  LiteralTuple exprs -> second TTuple <$> foldM unifyE (Map.empty, []) exprs
     where
-      unifyE :: [Type] -> Expression -> TI [Type]
-      unifyE ts expr = (\t -> ts ++ [t]) <$> inferExpressionType expr
+      unifyE :: (TypeSubst, [Type]) -> Expression -> TI (TypeSubst, [Type])
+      unifyE (stAcc, tys) expr = withValues Map.empty $ do
+        modifyEnv $ apply stAcc
+        (st, ty) <- inferExpressionType' expr
+        pure (stAcc `composeSubst` st, tys ++ [ty])
 
 inferExpressionType :: Expression -> TI Type
 inferExpressionType expr = do
@@ -92,7 +97,7 @@ inferExpressionType expr = do
 
 inferExpressionType' :: Expression -> TI (TypeSubst, Type)
 inferExpressionType' = \case
-  Literal lit -> (Map.empty,) <$> inferLiteralType lit
+  Literal lit -> inferLiteralType lit
   Lambda param body -> do
     typeVar <- newTypeVar "a"
     let newVal = Map.singleton param (TypeScheme [] typeVar)
