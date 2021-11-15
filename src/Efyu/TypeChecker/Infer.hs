@@ -75,20 +75,18 @@ inferLiteralType = \case
   LiteralString _ -> pure (Map.empty, TString)
   LiteralBool _ -> pure (Map.empty, TBool)
   LiteralFloat _ -> pure (Map.empty, TFloat)
-  -- TODO: Fix substitutions
-  LiteralList exprs -> (Map.empty,) . TList <$> foldM unifyE TUnknown exprs
-    where
-      unifyE :: Type -> Expression -> TI Type
-      unifyE t1 expr =
-        inferExpressionType expr >>= (\t2 -> higherSp t1 t2 <$ unify t1 t2)
+  LiteralList exprs -> second TList <$> foldM mergeListTy (Map.empty, TUnknown) exprs
   LiteralTuple [] -> pure (Map.empty, TUnknown) -- TODO: Invalid case (maybe unit)
-  LiteralTuple exprs -> second TTuple <$> foldM unifyE (Map.empty, []) exprs
-    where
-      unifyE :: (TypeSubst, [Type]) -> Expression -> TI (TypeSubst, [Type])
-      unifyE (stAcc, tys) expr = withValues Map.empty $ do
-        modifyEnv $ apply stAcc
-        (st, ty) <- inferExpressionType' expr
-        pure (stAcc `composeSubst` st, tys ++ [ty])
+  LiteralTuple exprs -> second TTuple <$> foldM mergeTupleTy (Map.empty, []) exprs
+  where
+    mergeListTy = mergeExprTypes (\t1 t2 -> higherSp t1 t2 <$ unify t1 t2)
+    mergeTupleTy = mergeExprTypes (\ts t -> pure $ ts ++ [t])
+    mergeExprTypes :: (a -> Type -> TI a) -> (TypeSubst, a) -> Expression -> TI (TypeSubst, a)
+    mergeExprTypes merge (stAcc, tys) expr = withValues Map.empty $ do
+      modifyEnv $ apply stAcc
+      (st, ty) <- inferExpressionType' expr
+      ty' <- merge tys ty
+      pure (stAcc `composeSubst` st, ty')
 
 inferExpressionType :: Expression -> TI Type
 inferExpressionType expr = do

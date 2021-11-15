@@ -117,6 +117,9 @@ tests =
           infer
             ("fn" *->> tuple [var "fn" `call` str "val", var "fn" `call` int 5])
             `shouldReturn` Left "unable to unify types: TString and TInt"
+          infer
+            ("fn" *->> list [var "fn" `call` str "val", var "fn" `call` int 5])
+            `shouldReturn` Left "unable to unify types: TString and TInt"
 
       describe "ifElse conditions" $ do
         it "should infer types for if-else" $ do
