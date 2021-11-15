@@ -1,0 +1,62 @@
+
+effect State s where
+  get : s
+  set : s -> ()
+  modify : (s -> s) -> ()
+
+runState init eff =
+  let
+    state = unsafe__reference init
+  in
+    run eff with
+      State.get -> resume (read state)
+      State.set s ->
+        let
+          _ = update state s
+        in resume ()
+
+effect Console where
+  print : a -> ()
+
+effect ReadEnv where
+  readEnv String -> String
+
+myfn : [ReadEnv, Console, State Int] ()
+myfn = do
+  val <- get
+  set (val + 200)
+  homePath <- readEnv "HOME"
+  print homePath
+  modify (\v -> v - 200)
+  return ()
+
+main : ()
+main = run (runEnv (runState 0 myfn)) with
+  Console.print v -> resume ()
+
+
+import React.Prelude *
+
+component : [ReactState, ReactEffect, ReactCallback] Component
+component = do
+  state <- useState 0
+
+  useEffect [] (
+    do
+      x <- loadStuff
+      setState state x
+      return Nothing
+  )
+
+  let doStuff = useCallback [] (\_ ->
+    do
+      modifyState state (add 1)
+  )
+  
+  return (div [ class "foobar" ] [
+    div [ onClick doStuff ] [
+      show (getState state)
+    ]
+  ])
+
+---

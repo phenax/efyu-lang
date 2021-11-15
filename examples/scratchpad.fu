@@ -3,6 +3,12 @@
 --   gam = 200
 --   add5 = add 5
 
+-- type alias WithName a = (String, a)
+-- type Maybe a = Just a | Nothing
+-- type Either a e
+--   = Left a
+--   | Right e
+
 id : a -> a
 id x = x
 
