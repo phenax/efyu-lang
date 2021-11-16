@@ -85,11 +85,15 @@ lookupType name = Map.lookup name . envTypes <$> getEnv
 instance FreeTypeVar Type where
   freeTypeVars = \case
     TVar name -> Set.singleton name
-    TLambda p r -> Set.union (freeTypeVars p) (freeTypeVars r)
+    TLambda p r -> freeTypeVars p `Set.union` freeTypeVars r
+    TTuple tys -> foldl' Set.union Set.empty . map freeTypeVars $ tys
+    TList ty -> freeTypeVars ty
     _ -> Set.empty
   apply sub = \case
     TLambda p r -> TLambda (apply sub p) (apply sub r)
     TVar n -> fromMaybe (TVar n) $ Map.lookup n sub
+    TTuple tys -> TTuple . map (apply sub) $ tys
+    TList ty -> TList $ apply sub ty
     t -> t
 
 instance FreeTypeVar TypeScheme where
