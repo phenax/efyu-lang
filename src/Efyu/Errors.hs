@@ -8,6 +8,7 @@ data CompilerError
   = TypeUnificationError Type Type
   | UnboundVariableError (IdentifierName 'VarName)
   | UnboundTypeError (IdentifierName 'TypeName)
+  | UnboundPolyTypeError (IdentifierName 'PolyTypeName)
   | OccursError (IdentifierName 'PolyTypeName)
   | KindMismatchError Type Type
   | IllegalKindError Type
@@ -21,6 +22,8 @@ instance Show CompilerError where
       "reference to unbound variable: " ++ name
     UnboundTypeError (IdentifierName name) ->
       "reference to undefined type: " ++ name
+    UnboundPolyTypeError (IdentifierName name) ->
+      "reference to undefined type variable: " ++ name
     OccursError (IdentifierName name) ->
       "occur check failed: Type var " ++ name ++ " already exists"
     KindMismatchError ty typaram ->

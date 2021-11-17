@@ -152,6 +152,15 @@ verifyValidKind (TLambda tyP tyB) = verifyValidKind tyP >> verifyValidKind tyB
 verifyValidKind (TName name) = lookupType name >>= maybe (pure ()) (instantiate >=> verifyValidKind)
 verifyValidKind _ = pure ()
 
+verifyTypeVars :: Type -> TypeVars -> TI ()
+verifyTypeVars (TScope v ty) vars = verifyTypeVars ty (Set.insert v vars)
+verifyTypeVars typ vars = do
+  if Set.null diff
+    then pure ()
+    else (lift . throwErr) (UnboundPolyTypeError $ Set.elemAt 0 diff)
+  where
+    diff = freeTypeVars typ `Set.difference` vars
+
 resolveDeclaration :: TypeSubst -> Definition -> TI TypeSubst
 resolveDeclaration st = \case
   (DefSignature name ty) -> do
@@ -200,6 +209,7 @@ checkBlockType :: Block -> TI ()
 checkBlockType (Module _ blocks) = mapM_ checkBlockType blocks
 checkBlockType (Def def) = resolveDeclaration Map.empty def >>= (modifyEnv . apply)
 checkBlockType (TypeAliasDef name ty) = do
+  verifyTypeVars ty Set.empty
   env <- getEnv
   defineTypeAliases $ Map.singleton name (generalize env ty)
 

@@ -42,6 +42,15 @@ tests =
         )
         `shouldReturn` Right ()
 
+    it "should error out for unbound type vars in alias definitions" $ do
+      checkM
+        ( Module
+            "Hello"
+            [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", tvar "b"])
+            ]
+        )
+        `shouldReturn` Left (UnboundPolyTypeError $ ident "b")
+
     it "should error out for invalid type definitions" $ do
       checkM
         ( Module
