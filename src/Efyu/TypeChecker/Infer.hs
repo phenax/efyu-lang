@@ -28,6 +28,25 @@ occursCheckErrorMessage (IdentifierName name) = "occur check failed: Type var " 
 runTI :: TI a -> IO (Either String a)
 runTI = runExceptT . runWithEnv
 
+collapseTypeApply :: Type -> Type -> TI (TypeSubst, Type)
+collapseTypeApply (TName name) typaram = do
+  tyschM <- lookupType name
+  case tyschM of
+    Just tysch ->
+      instantiate tysch >>= \case
+        TScope arg ty' ->
+          let st = Map.singleton arg typaram
+           in pure (st, apply st ty')
+        _ -> lift . throwE $ "applied too many args. expected 0"
+    Nothing -> lift . throwE $ "type not defined"
+collapseTypeApply (TApply tylam' typaram') typaram = do
+  collapseTypeApply tylam' typaram' >>= resolveType
+  where
+    resolveType (st, ty) = case ty of
+      TScope arg ty' -> pure (Map.insert arg typaram st, ty')
+      _ -> lift . throwE $ "applied too many args"
+collapseTypeApply _ _ = lift . throwE $ "applied too many args"
+
 -- | Unify two types and return substitutions
 unify :: Type -> Type -> TI TypeSubst
 unify t t' = case (t, t') of
@@ -46,15 +65,21 @@ unify t t' = case (t, t') of
     st <- unify p p'
     st' <- unify (apply st r) (apply st r')
     pure $ composeSubst st st'
+  (TApply ty1 ty2, ty) -> unifyTypeApply (ty1, ty2) ty
+  (ty, TApply ty1 ty2) -> unifyTypeApply (ty1, ty2) ty
+  (ty'@(TScope params tyBody), ty) -> lift . throwE $ unificationErrorMessage ty ty'
+  (ty, ty'@(TScope params tyBody)) -> lift . throwE $ unificationErrorMessage ty ty'
   (ty, ty') ->
     lift . throwE $ unificationErrorMessage ty ty'
   where
+    unifyTypeApply (tylam, typaram) ty = do
+      (st, tyRes) <- collapseTypeApply tylam typaram
+      unify (apply st tyRes) ty
     bindTypeName name ty = do
       ty'M <- lookupType name
       case ty'M of
         Just tsch -> instantiate tsch >>= unify ty
         Nothing -> pure Map.empty
-    bindTypeVar :: IdentifierName 'PolyTypeName -> Type -> TI TypeSubst
     bindTypeVar name = \case
       TVar n | n == name -> pure Map.empty
       ty
@@ -195,6 +220,10 @@ checkBlockType (TypeAliasDef name ty) = do
 -- | Type check module (module block)
 checkModule :: Block -> TI ()
 checkModule = checkBlockType
+
+-- | Type check module (module block)
+checkModuleWithEnv :: Block -> TI TypeEnv
+checkModuleWithEnv b = checkBlockType b >> getEnv
 
 ---
 ---

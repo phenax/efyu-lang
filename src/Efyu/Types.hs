@@ -33,6 +33,11 @@ data Expression
   | IfElse Expression Expression Expression
   deriving (Show, Eq)
 
+-- | Polymorphic set of vars (forall a, b, c. Type)
+data TypeScheme
+  = TypeScheme [IdentifierName PolyTypeName] Type
+  deriving (Show, Eq)
+
 data Type
   = TLambda Type Type
   | TInt
@@ -43,5 +48,7 @@ data Type
   | TList Type
   | TTuple [Type]
   | TName (IdentifierName 'TypeName)
+  | TApply Type Type
+  | TScope (IdentifierName 'PolyTypeName) Type
   | TUnknown
   deriving (Show, Eq)

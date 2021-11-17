@@ -2,6 +2,7 @@ module Efyu.TypeChecker.Env where
 
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.State
+import Data.Foldable (Foldable (foldl'))
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
@@ -11,9 +12,6 @@ import Efyu.Utils (mapDeleteKeys)
 
 composeSubst :: TypeSubst -> TypeSubst -> TypeSubst
 composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1
-
--- | Polymorphic set of vars (forall a, b, c. Type)
-data TypeScheme = TypeScheme [IdentifierName PolyTypeName] Type deriving (Show)
 
 type ValueMap = Map.Map (IdentifierName 'VarName) TypeScheme
 
@@ -28,7 +26,8 @@ data TypeEnv = TypeEnv
     -- | type names defined in the environment
     envTypes :: TypeMap,
     -- | contructors for types
-    envConstructors :: Map.Map (IdentifierName 'ContructorName) TypeScheme
+    envConstructors :: Map.Map (IdentifierName 'ContructorName) TypeScheme,
+    envDebugEnvs :: Map.Map String Type
   }
 
 type WithEnv = StateT TypeEnv
@@ -45,7 +44,8 @@ emptyEnv =
     { envPolyTypeIndex = 0,
       envValues = Map.empty,
       envTypes = Map.empty,
-      envConstructors = Map.empty
+      envConstructors = Map.empty,
+      envDebugEnvs = Map.empty
     }
 
 runWithEnv :: (MonadIO m) => WithEnv m a -> m a

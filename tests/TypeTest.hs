@@ -61,16 +61,88 @@ tests =
 
       describe "Block modules" $ do
         let checkM = runTI . checkBlockType
-        it "should infer types of recursive functions" $ do
+        -- let getType m = runTI (envTypes <$> checkModuleWithEnv m)
+        -- let getDebug m = runTI (envDebugEnvs <$> checkModuleWithEnv m)
+        it "should check modules" $ do
+          -- -- Too many args. expected 0 on inline
+          -- checkM
+          --   ( Module
+          --       "Hello"
+          --       [ Def . DefSignature (ident "foobar") $ TInt `TApply` TInt,
+          --         Def . DefValue (ident "foobar") $ int 5
+          --       ]
+          --   )
+          --   `shouldReturn` Right ()
+          -- -- Too many args. expected 0 on name
+
+          -- checkM
+          --   ( Module
+          --       "Hello"
+          --       [ TypeAliasDef (ident "Pair") TString,
+          --         Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt,
+          --         Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
+          --       ]
+          --   )
+          --   `shouldReturn` Right ()
+          -- -- Too many args
+
+          -- checkM
+          --   ( Module
+          --       "Hello"
+          --       [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", TInt]),
+          --         Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
+          --         Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
+          --       ]
+          --   )
+          --   `shouldReturn` Right ()
+
+          -- -- Type not found
+          -- checkM
+          --   ( Module
+          --       "Hello"
+          --       [ Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
+          --         Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
+          --       ]
+          --   )
+          --   `shouldReturn` Right ()
+
+          -- -- TODO: Should error out as TestType is not defined
+          -- checkM
+          --   ( Module
+          --       "Hello"
+          --       [ Def . DefSignature (ident "foobar") $ TName (ident "TestType"),
+          --         Def . DefValue (ident "foobar") $ int 5
+          --       ]
+          --   )
+          --   `shouldReturn` Right ()
+
           checkM
             ( Module
                 "Hello"
-                [ TypeAliasDef (IdentifierName "DummyInt") TInt,
-                  Def . DefSignature (IdentifierName "foobar") $ TName (IdentifierName "DummyInt"),
-                  Def . DefValue (IdentifierName "foobar") $ int 5
+                [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TScope (ident "b") $ TTuple [tvar "a", tvar "b"]),
+                  Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
+                  Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
                 ]
             )
             `shouldReturn` Right ()
+          checkM
+            ( Module
+                "Hello"
+                [ TypeAliasDef (ident "DummyInt") TInt,
+                  Def . DefSignature (ident "foobar") $ TName (ident "DummyInt"),
+                  Def . DefValue (ident "foobar") $ int 5
+                ]
+            )
+            `shouldReturn` Right ()
+          checkM
+            ( Module
+                "Hello"
+                [ TypeAliasDef (ident "DummyStr") TString,
+                  Def . DefSignature (ident "foobar") $ TName (ident "DummyStr"),
+                  Def . DefValue (ident "foobar") $ int 5
+                ]
+            )
+            `shouldReturn` Left (unificationErrorMessage TInt TString)
 
     describe "Inference" $ do
       let infer = runTI . inferExpressionType

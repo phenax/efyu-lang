@@ -3,7 +3,9 @@ module TestHelpers where
 import Efyu.Syntax.Block
 import Efyu.Types
 
-(*->>) = Lambda . IdentifierName
+ident = IdentifierName
+
+(*->>) = Lambda . ident
 
 tlam = TLambda
 
@@ -25,14 +27,14 @@ tuple = Literal . LiteralTuple
 
 list = Literal . LiteralList
 
-var = Var . IdentifierName
+var = Var . ident
 
-tvar = TVar . IdentifierName
+tvar = TVar . ident
 
-defVal = DefValue . IdentifierName
+defVal = DefValue . ident
 
-defSig = DefSignature . IdentifierName
+defSig = DefSignature . ident
 
-typeAlias = TypeAliasDef . IdentifierName
+typeAlias = TypeAliasDef . ident
 
-tname = TName . IdentifierName
+tname = TName . ident
