@@ -16,16 +16,6 @@ import Efyu.Types
 
 type TI = WithEnv (WithCompilerError IO)
 
-unificationErrorMessage :: Type -> Type -> String
-unificationErrorMessage t1 t2 =
-  "unable to unify types: " ++ show t1 ++ " and " ++ show t2
-
-unboundVarErrorMessage :: IdentifierName 'VarName -> String
-unboundVarErrorMessage (IdentifierName name) = "reference to unbound variable: " ++ name
-
-occursCheckErrorMessage :: IdentifierName 'PolyTypeName -> String
-occursCheckErrorMessage (IdentifierName name) = "occur check failed: Type var " ++ name ++ " already exists"
-
 runTI :: TI a -> IO (Either CompilerError a)
 runTI = runWithError . runWithEnv
 

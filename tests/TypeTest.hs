@@ -1,7 +1,6 @@
 module TypeTest where
 
 import Efyu.Errors
-import Efyu.Syntax.Block
 import Efyu.TypeChecker.Infer
 import Efyu.Types
 import Test.Hspec
@@ -56,86 +55,9 @@ tests =
                           (var "fact" `call` (var "sub" `call` var "x" `call` int 1))
                           (int 1)
                   ]
-                  (var "fact" `call` int 5)
-          check recursiveExpr TInt `shouldReturn` Right TInt
-          check recursiveExpr TString `shouldReturn` Left (TypeUnificationError TString TInt)
-
-      describe "Block modules" $ do
-        let checkM = runTI . checkBlockType
-        -- let getType m = runTI (envTypes <$> checkModuleWithEnv m)
-        -- let getDebug m = runTI (envDebugEnvs <$> checkModuleWithEnv m)
-        it "should check modules" $ do
-          checkM
-            ( Module
-                "Hello"
-                [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TScope (ident "b") $ TTuple [tvar "a", tvar "b"]),
-                  Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
-                  Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
-                ]
-            )
-            `shouldReturn` Right ()
-          checkM
-            ( Module
-                "Hello"
-                [ TypeAliasDef (ident "DummyInt") TInt,
-                  Def . DefSignature (ident "foobar") $ TName (ident "DummyInt"),
-                  Def . DefValue (ident "foobar") $ int 5
-                ]
-            )
-            `shouldReturn` Right ()
-
-          checkM
-            ( Module
-                "Hello"
-                [ Def . DefSignature (ident "foobar") $ TName (ident "TestType"),
-                  Def . DefValue (ident "foobar") $ int 5
-                ]
-            )
-            `shouldReturn` Left (UnboundTypeError . ident $ "TestType")
-
-          checkM
-            ( Module
-                "Hello"
-                [ TypeAliasDef (ident "DummyStr") TString,
-                  Def . DefSignature (ident "foobar") $ TName (ident "DummyStr"),
-                  Def . DefValue (ident "foobar") $ int 5
-                ]
-            )
-            `shouldReturn` Left (TypeUnificationError TInt TString)
-          checkM
-            ( Module
-                "Hello"
-                [ Def . DefSignature (ident "foobar") $ TInt `TApply` TInt,
-                  Def . DefValue (ident "foobar") $ int 5
-                ]
-            )
-            `shouldReturn` Left (KindMismatchError TInt TInt)
-          checkM
-            ( Module
-                "Hello"
-                [ TypeAliasDef (ident "Pair") TString,
-                  Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt,
-                  Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
-                ]
-            )
-            `shouldReturn` Left (KindMismatchError TString TInt)
-          checkM
-            ( Module
-                "Hello"
-                [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
-                  Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
-                  Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
-                ]
-            )
-            `shouldReturn` Left (KindMismatchError (TTuple [TInt, TFloat]) TString)
-          checkM
-            ( Module
-                "Hello"
-                [ Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
-                  Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
-                ]
-            )
-            `shouldReturn` Left (UnboundTypeError . ident $ "Pair")
+                  (var "fact")
+          check recursiveExpr (TInt `tlam` TInt) `shouldReturn` Right (TInt `tlam` TInt)
+          check recursiveExpr (TInt `tlam` TString) `shouldReturn` Left (TypeUnificationError TString TInt)
 
     describe "Inference" $ do
       let infer = runTI . inferExpressionType
@@ -199,6 +121,23 @@ tests =
           infer
             ("fn" *->> list [var "fn" `call` str "val", var "fn" `call` int 5])
             `shouldReturn` Left (TypeUnificationError TString TInt)
+
+      -- TODO: Fix type inference for lambda parameter
+      -- describe "recursive functions" $ do
+      --   it "should infer types of recursive functions" $ do
+      --     let recursiveExpr =
+      --           Let
+      --             [ defSig "gte" (TInt `tlam` TInt `tlam` TBool),
+      --               defSig "sub" (TInt `tlam` TInt `tlam` TInt),
+      --               defVal "fact" $
+      --                 "x"
+      --                   *->> IfElse
+      --                     (var "gte" `call` var "x" `call` int 1)
+      --                     (var "fact" `call` (var "sub" `call` var "x" `call` int 1))
+      --                     (int 1)
+      --             ]
+      --             (var "fact")
+      --     infer recursiveExpr `shouldReturn` Right TInt
 
       describe "ifElse conditions" $ do
         it "should infer types for if-else" $ do

@@ -94,6 +94,7 @@ test-suite efyu-test
   main-is: _main.hs
   other-modules:
       BlockParserTest
+      CustomTypeTest
       ExprParserTest
       TestHelpers
       TypeTest
