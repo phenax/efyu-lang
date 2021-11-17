@@ -1,13 +1,19 @@
--- TODO: add support for nested modules
+-- MAYBE: add support for nested modules??
 -- module Test where
 --   gam = 200
 --   add5 = add 5
 
--- type alias WithName a = (String, a)
+-- TODO: implement records (labelled product types)
+-- type User = User { id : Int, name : String }
+
+-- TODO: implement adt
 -- type Maybe a = Just a | Nothing
 -- type Either a e
 --   = Left a
 --   | Right e
+
+-- TODO: add syntax for type alias
+-- type alias WithName a = (String, a)
 
 id : a -> a
 id x = x
