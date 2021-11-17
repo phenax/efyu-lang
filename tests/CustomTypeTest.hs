@@ -32,6 +32,16 @@ tests =
         )
         `shouldReturn` Right ()
 
+      checkM
+        ( Module
+            "Hello"
+            [ TypeAliasDef (ident "Dummy") $ ident "a" `TScope` (ident "b" `TScope` (ident "c" `TScope` TTuple [tvar "b", tvar "a", tvar "c"])),
+              Def . DefSignature (ident "foobar") $ TName (ident "Dummy") `TApply` TInt `TApply` TString `TApply` TFloat,
+              Def . DefValue (ident "foobar") $ tuple [str "x", int 5, float 2.0]
+            ]
+        )
+        `shouldReturn` Right ()
+
     it "should error out for invalid type definitions" $ do
       checkM
         ( Module
