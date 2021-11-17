@@ -10,6 +10,7 @@ data CompilerError
   | UnboundTypeError (IdentifierName 'TypeName)
   | OccursError (IdentifierName 'PolyTypeName)
   | KindMismatchError Type Type
+  | IllegalKindError Type
   deriving (Eq)
 
 instance Show CompilerError where
@@ -24,6 +25,7 @@ instance Show CompilerError where
       "occur check failed: Type var " ++ name ++ " already exists"
     KindMismatchError ty typaram ->
       "kind signature doesn't match. unable to apply: " ++ show ty ++ " (" ++ show typaram ++ ")"
+    IllegalKindError ty -> "expected type but got kind: " ++ show ty
 
 type WithCompilerError = ExceptT CompilerError
 

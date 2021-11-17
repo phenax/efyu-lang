@@ -12,7 +12,7 @@ tests =
     let checkM = runTI . checkBlockType
     -- let getType m = runTI (envTypes <$> checkModuleWithEnv m)
     -- let getDebug m = runTI (envDebugEnvs <$> checkModuleWithEnv m)
-    it "should check modules" $ do
+    it "should check module" $ do
       checkM
         ( Module
             "Hello"
@@ -32,6 +32,7 @@ tests =
         )
         `shouldReturn` Right ()
 
+    it "should error out for invalid type definitions" $ do
       checkM
         ( Module
             "Hello"
@@ -50,6 +51,7 @@ tests =
             ]
         )
         `shouldReturn` Left (TypeUnificationError TInt TString)
+
       checkM
         ( Module
             "Hello"
@@ -58,6 +60,7 @@ tests =
             ]
         )
         `shouldReturn` Left (KindMismatchError TInt TInt)
+
       checkM
         ( Module
             "Hello"
@@ -67,6 +70,7 @@ tests =
             ]
         )
         `shouldReturn` Left (KindMismatchError TString TInt)
+
       checkM
         ( Module
             "Hello"
@@ -76,6 +80,7 @@ tests =
             ]
         )
         `shouldReturn` Left (KindMismatchError (TTuple [TInt, TFloat]) TString)
+
       checkM
         ( Module
             "Hello"
@@ -84,3 +89,24 @@ tests =
             ]
         )
         `shouldReturn` Left (UnboundTypeError . ident $ "Pair")
+
+    it "should error out for incomplete kind signatures" $ do
+      checkM
+        ( Module
+            "Hello"
+            [ TypeAliasDef (ident "Fancy") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
+              Def . defSig "a" $ tname "Fancy",
+              Def . defVal "a" $ tuple [int 2, float 2.0]
+            ]
+        )
+        `shouldReturn` Left (IllegalKindError (TScope (ident "a") (TTuple [tvar "a", TFloat])))
+      checkM
+        ( Module
+            "Hello"
+            [ TypeAliasDef (ident "Fancy") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
+              Def . defSig "a" $ TName (ident "Fancy")
+            ]
+        )
+        `shouldReturn` Left (IllegalKindError (TScope (ident "a") (TTuple [tvar "a", TFloat])))
+
+---

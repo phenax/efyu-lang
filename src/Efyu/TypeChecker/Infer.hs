@@ -1,6 +1,6 @@
 module Efyu.TypeChecker.Infer where
 
-import Control.Monad (foldM, zipWithM)
+import Control.Monad (foldM, zipWithM, (>=>))
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Data.Bifunctor (Bifunctor (second))
 import Data.List (foldl', sortBy)
@@ -145,9 +145,17 @@ inferExpressionType' = \case
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
     pure (subst', apply subst' $ higherSp ifT elseT)
 
+-- | Check if type doesn't use kinds illegally
+verifyValidKind :: Type -> TI ()
+verifyValidKind ty@(TScope _ _) = lift . throwErr $ IllegalKindError ty
+verifyValidKind (TLambda tyP tyB) = verifyValidKind tyP >> verifyValidKind tyB
+verifyValidKind (TName name) = lookupType name >>= maybe (pure ()) (instantiate >=> verifyValidKind)
+verifyValidKind _ = pure ()
+
 resolveDeclaration :: TypeSubst -> Definition -> TI TypeSubst
 resolveDeclaration st = \case
   (DefSignature name ty) -> do
+    verifyValidKind ty
     let tsch = TypeScheme (Set.toList . freeTypeVars $ ty) ty
     modifyEnv $ updateValues (Map.insert name tsch)
     pure st
