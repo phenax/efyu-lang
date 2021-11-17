@@ -7,13 +7,14 @@ import Data.Bifunctor (Bifunctor (second))
 import Data.List (foldl', sortBy)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Efyu.Errors
 import Efyu.Syntax.Block
 import Efyu.TypeChecker.Env
 import Efyu.TypeChecker.FreeTypeVars
 import Efyu.TypeChecker.Utils
 import Efyu.Types
 
-type TI = WithEnv (ExceptT String IO)
+type TI = WithEnv (WithCompilerError IO)
 
 unificationErrorMessage :: Type -> Type -> String
 unificationErrorMessage t1 t2 =
@@ -25,8 +26,8 @@ unboundVarErrorMessage (IdentifierName name) = "reference to unbound variable: "
 occursCheckErrorMessage :: IdentifierName 'PolyTypeName -> String
 occursCheckErrorMessage (IdentifierName name) = "occur check failed: Type var " ++ name ++ " already exists"
 
-runTI :: TI a -> IO (Either String a)
-runTI = runExceptT . runWithEnv
+runTI :: TI a -> IO (Either CompilerError a)
+runTI = runWithError . runWithEnv
 
 collapseTypeApply :: Type -> Type -> TI (TypeSubst, Type)
 collapseTypeApply (TName name) typaram = do
@@ -37,15 +38,15 @@ collapseTypeApply (TName name) typaram = do
         TScope arg ty' ->
           let st = Map.singleton arg typaram
            in pure (st, apply st ty')
-        _ -> lift . throwE $ "applied too many args. expected 0"
-    Nothing -> lift . throwE $ "type not defined"
-collapseTypeApply (TApply tylam' typaram') typaram = do
-  collapseTypeApply tylam' typaram' >>= resolveType
+        ty -> lift . throwErr $ KindMismatchError ty typaram
+    Nothing -> lift . throwErr $ UnboundTypeError name
+collapseTypeApply (TApply tylam' typaram') typaram =
+  collapseTypeApply tylam' typaram' >>= uncurry resolveType
   where
-    resolveType (st, ty) = case ty of
+    resolveType st = \case
       TScope arg ty' -> pure (Map.insert arg typaram st, ty')
-      _ -> lift . throwE $ "applied too many args"
-collapseTypeApply _ _ = lift . throwE $ "applied too many args"
+      ty -> lift . throwErr $ KindMismatchError ty typaram
+collapseTypeApply ty typaram = lift . throwErr $ KindMismatchError ty typaram
 
 -- | Unify two types and return substitutions
 unify :: Type -> Type -> TI TypeSubst
@@ -67,10 +68,10 @@ unify t t' = case (t, t') of
     pure $ composeSubst st st'
   (TApply ty1 ty2, ty) -> unifyTypeApply (ty1, ty2) ty
   (ty, TApply ty1 ty2) -> unifyTypeApply (ty1, ty2) ty
-  (ty'@(TScope params tyBody), ty) -> lift . throwE $ unificationErrorMessage ty ty'
-  (ty, ty'@(TScope params tyBody)) -> lift . throwE $ unificationErrorMessage ty ty'
+  (ty'@(TScope _params _tyBody), ty) -> lift . throwErr $ TypeUnificationError ty ty'
+  (ty, ty'@(TScope _params _tyBody)) -> lift . throwErr $ TypeUnificationError ty ty'
   (ty, ty') ->
-    lift . throwE $ unificationErrorMessage ty ty'
+    lift . throwErr $ TypeUnificationError ty ty'
   where
     unifyTypeApply (tylam, typaram) ty = do
       (st, tyRes) <- collapseTypeApply tylam typaram
@@ -84,7 +85,7 @@ unify t t' = case (t, t') of
       TVar n | n == name -> pure Map.empty
       ty
         | Set.member name (freeTypeVars ty) ->
-          lift . throwE $ occursCheckErrorMessage name
+          lift . throwE $ OccursError name
       ty -> pure $ Map.singleton name ty
 
 -- | Replace all bound types with fresh polymorphic type vars
@@ -143,7 +144,7 @@ inferExpressionType' = \case
   Var name -> do
     resMaybe <- lookupValue name
     case resMaybe of
-      Nothing -> lift . throwE $ unboundVarErrorMessage name
+      Nothing -> lift . throwE $ UnboundVariableError name
       Just scheme -> (Map.empty,) <$> instantiate scheme
   Let bindings body -> do
     stDefs <- resolveDeclarationList bindings

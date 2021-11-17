@@ -1,5 +1,6 @@
 module TypeTest where
 
+import Efyu.Errors
 import Efyu.Syntax.Block
 import Efyu.TypeChecker.Infer
 import Efyu.Types
@@ -14,7 +15,7 @@ tests =
       it "should check for invalid type annotations" $ do
         check (int 5) TInt `shouldReturn` Right TInt
         check (int 5) TString
-          `shouldReturn` Left (unificationErrorMessage TString TInt)
+          `shouldReturn` Left (TypeUnificationError TString TInt)
         check
           ("x" *->> "f" *->> var "f" `call` var "x")
           (tvar "a" `tlam` (tvar "a" `tlam` tvar "b") `tlam` tvar "b")
@@ -26,7 +27,7 @@ tests =
         check
           ("x" *->> "f" *->> var "f" `call` var "x")
           (TString `tlam` (TInt `tlam` TString) `tlam` TString)
-          `shouldReturn` Left (unificationErrorMessage TInt TString)
+          `shouldReturn` Left (TypeUnificationError TInt TString)
 
       it "should use inferred type when explicit type is unknown" $ do
         check (int 5) TUnknown `shouldReturn` Right TInt
@@ -38,9 +39,9 @@ tests =
         check (IfElse (bool True) (int 5) (int 6)) TUnknown `shouldReturn` Right TInt
         check (IfElse (bool True) (float 5.0) (float 6.0)) TUnknown `shouldReturn` Right TFloat
         check (IfElse (bool True) (float 5.0) (int 6)) TUnknown
-          `shouldReturn` Left (unificationErrorMessage TFloat TInt)
+          `shouldReturn` Left (TypeUnificationError TFloat TInt)
         check (IfElse (int 3) (int 1) (int 1)) TUnknown
-          `shouldReturn` Left (unificationErrorMessage TInt TBool)
+          `shouldReturn` Left (TypeUnificationError TInt TBool)
 
       describe "recursive functions" $ do
         it "should infer types of recursive functions" $ do
@@ -57,7 +58,7 @@ tests =
                   ]
                   (var "fact" `call` int 5)
           check recursiveExpr TInt `shouldReturn` Right TInt
-          check recursiveExpr TString `shouldReturn` Left (unificationErrorMessage TString TInt)
+          check recursiveExpr TString `shouldReturn` Left (TypeUnificationError TString TInt)
 
       describe "Block modules" $ do
         let checkM = runTI . checkBlockType
@@ -142,7 +143,7 @@ tests =
                   Def . DefValue (ident "foobar") $ int 5
                 ]
             )
-            `shouldReturn` Left (unificationErrorMessage TInt TString)
+            `shouldReturn` Left (TypeUnificationError TInt TString)
 
     describe "Inference" $ do
       let infer = runTI . inferExpressionType
@@ -157,9 +158,9 @@ tests =
           infer (Literal $ LiteralList [int 5]) `shouldReturn` Right (TList TInt)
           infer (Literal $ LiteralList [float 5.0, float 5.0]) `shouldReturn` Right (TList TFloat)
           infer (Literal $ LiteralList [int 5, str "wow"])
-            `shouldReturn` Left (unificationErrorMessage TInt TString)
+            `shouldReturn` Left (TypeUnificationError TInt TString)
           infer (Literal $ LiteralList [str "wow", float 3.0])
-            `shouldReturn` Left (unificationErrorMessage TString TFloat)
+            `shouldReturn` Left (TypeUnificationError TString TFloat)
         it "should infer tuple literals" $ do
           infer (Literal $ LiteralTuple []) `shouldReturn` Right TUnknown
           infer (Literal $ LiteralTuple [int 5]) `shouldReturn` Right (TTuple [TInt])
@@ -199,13 +200,13 @@ tests =
         it "should fail for polymorphic usage of lambda parameters" $ do
           infer
             ("fn" *->> "pair" *->> var "pair" `call` (var "fn" `call` str "val") `call` (var "fn" `call` int 5))
-            `shouldReturn` Left "unable to unify types: TString and TInt"
+            `shouldReturn` Left (TypeUnificationError TString TInt)
           infer
             ("fn" *->> tuple [var "fn" `call` str "val", var "fn" `call` int 5])
-            `shouldReturn` Left "unable to unify types: TString and TInt"
+            `shouldReturn` Left (TypeUnificationError TString TInt)
           infer
             ("fn" *->> list [var "fn" `call` str "val", var "fn" `call` int 5])
-            `shouldReturn` Left "unable to unify types: TString and TInt"
+            `shouldReturn` Left (TypeUnificationError TString TInt)
 
       describe "ifElse conditions" $ do
         it "should infer types for if-else" $ do
@@ -214,9 +215,9 @@ tests =
 
       it "should error out for invalid variables" $ do
         infer (var "foobar")
-          `shouldReturn` Left (unboundVarErrorMessage . IdentifierName $ "foobar")
+          `shouldReturn` Left (UnboundVariableError . IdentifierName $ "foobar")
         infer ("x" *->> var "x1")
-          `shouldReturn` Left (unboundVarErrorMessage . IdentifierName $ "x1")
+          `shouldReturn` Left (UnboundVariableError . IdentifierName $ "x1")
 
       it "should infer types from let bindings" $ do
         infer (Let [defVal "x" (Literal . LiteralInt $ 200)] (var "x"))
@@ -255,7 +256,7 @@ tests =
                 ]
                 (var "tup")
             )
-            `shouldReturn` Left (unificationErrorMessage TString TFloat)
+            `shouldReturn` Left (TypeUnificationError TString TFloat)
           infer
             ( Let
                 [ defSig "tup" $ TTuple [TInt, TFloat, TString],
@@ -263,7 +264,7 @@ tests =
                 ]
                 (var "tup")
             )
-            `shouldReturn` Left (unificationErrorMessage (TTuple [TInt, TFloat, TString]) (TTuple [TInt, TFloat]))
+            `shouldReturn` Left (TypeUnificationError (TTuple [TInt, TFloat, TString]) (TTuple [TInt, TFloat]))
           infer
             ( Let
                 [ defSig "tup" $ TTuple [TInt, TFloat, TString],
@@ -280,6 +281,6 @@ tests =
                 ]
                 (var "id")
             )
-            `shouldReturn` Left (unificationErrorMessage TString TInt)
+            `shouldReturn` Left (TypeUnificationError TString TInt)
 
 ---

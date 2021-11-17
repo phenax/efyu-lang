@@ -13,5 +13,5 @@ main = do
     Right r -> do
       res <- liftIO . runTI . checkModule $ r
       case res of
-        Left e -> putStrLn e
+        Left e -> print e
         Right _ -> pPrint r

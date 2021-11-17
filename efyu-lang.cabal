@@ -16,6 +16,7 @@ library
   exposed-modules:
       Efyu
       Efyu.Compiler.Codegen
+      Efyu.Errors
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
@@ -54,6 +55,7 @@ executable efyu
   other-modules:
       Efyu
       Efyu.Compiler.Codegen
+      Efyu.Errors
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
@@ -97,6 +99,7 @@ test-suite efyu-test
       TypeTest
       Efyu
       Efyu.Compiler.Codegen
+      Efyu.Errors
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
       Efyu.Syntax.Parse
