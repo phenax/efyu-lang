@@ -2,7 +2,6 @@ module Efyu.TypeChecker.Infer where
 
 import Control.Monad (foldM, zipWithM)
 import Control.Monad.Trans.Class (MonadTrans (lift))
-import Control.Monad.Trans.Except
 import Data.Bifunctor (Bifunctor (second))
 import Data.List (foldl', sortBy)
 import qualified Data.Map as Map
@@ -18,25 +17,6 @@ type TI = WithEnv (WithCompilerError IO)
 
 runTI :: TI a -> IO (Either CompilerError a)
 runTI = runWithError . runWithEnv
-
-collapseTypeApply :: Type -> Type -> TI (TypeSubst, Type)
-collapseTypeApply (TName name) typaram = do
-  tyschM <- lookupType name
-  case tyschM of
-    Just tysch ->
-      instantiate tysch >>= \case
-        TScope arg ty' ->
-          let st = Map.singleton arg typaram
-           in pure (st, apply st ty')
-        ty -> lift . throwErr $ KindMismatchError ty typaram
-    Nothing -> lift . throwErr $ UnboundTypeError name
-collapseTypeApply (TApply tylam' typaram') typaram =
-  collapseTypeApply tylam' typaram' >>= uncurry resolveType
-  where
-    resolveType st = \case
-      TScope arg ty' -> pure (Map.insert arg typaram st, ty')
-      ty -> lift . throwErr $ KindMismatchError ty typaram
-collapseTypeApply ty typaram = lift . throwErr $ KindMismatchError ty typaram
 
 -- | Unify two types and return substitutions
 unify :: Type -> Type -> TI TypeSubst
@@ -58,8 +38,6 @@ unify t t' = case (t, t') of
     pure $ composeSubst st st'
   (TApply ty1 ty2, ty) -> unifyTypeApply (ty1, ty2) ty
   (ty, TApply ty1 ty2) -> unifyTypeApply (ty1, ty2) ty
-  (ty'@(TScope _params _tyBody), ty) -> lift . throwErr $ TypeUnificationError ty ty'
-  (ty, ty'@(TScope _params _tyBody)) -> lift . throwErr $ TypeUnificationError ty ty'
   (ty, ty') ->
     lift . throwErr $ TypeUnificationError ty ty'
   where
@@ -75,21 +53,37 @@ unify t t' = case (t, t') of
       TVar n | n == name -> pure Map.empty
       ty
         | Set.member name (freeTypeVars ty) ->
-          lift . throwE $ OccursError name
+          lift . throwErr $ OccursError name
       ty -> pure $ Map.singleton name ty
+
+-- | Collapse type apply
+collapseTypeApply :: Type -> Type -> TI (TypeSubst, Type)
+collapseTypeApply (TName name) typaram = do
+  tyschM <- lookupType name
+  case tyschM of
+    Just tysch ->
+      instantiate tysch >>= \case
+        TScope arg ty' -> pure (st, apply st ty')
+          where
+            st = Map.singleton arg typaram
+        ty -> lift . throwErr $ KindMismatchError ty typaram
+    Nothing -> lift . throwErr $ UnboundTypeError name
+collapseTypeApply (TApply tylam' typaram') typaram =
+  collapseTypeApply tylam' typaram' >>= uncurry resolveType
+  where
+    resolveType st (TScope arg ty') = pure (Map.insert arg typaram st, ty')
+    resolveType _ ty = lift . throwErr $ KindMismatchError ty typaram
+collapseTypeApply ty typaram = lift . throwErr $ KindMismatchError ty typaram
 
 -- | Replace all bound types with fresh polymorphic type vars
 instantiate :: TypeScheme -> TI Type
 instantiate (TypeScheme vars t) = do
   vars' <- mapM (\_ -> newTypeVar "a") vars
-  let s = Map.fromList (zip vars vars')
-  pure $ apply s t
+  pure $ apply (Map.fromList (zip vars vars')) t
 
 -- | Generalize type over all free vars in type but not in type env
 generalize :: TypeEnv -> Type -> TypeScheme
-generalize env t = flip TypeScheme t . Set.toList $ freeTypes
-  where
-    freeTypes = Set.difference (freeTypeVars t) (freeTypeVars env)
+generalize env t = flip TypeScheme t . Set.toList $ freeTypeVars t `Set.difference` freeTypeVars env
 
 -- | Infer types of literals
 inferLiteralType :: Literal -> TI (TypeSubst, Type)
@@ -104,6 +98,7 @@ inferLiteralType = \case
   where
     mergeListTy = mergeExprTypes (\t1 t2 -> higherSp t1 t2 <$ unify t1 t2)
     mergeTupleTy = mergeExprTypes (\ts t -> pure $ ts ++ [t])
+
     mergeExprTypes :: (a -> Type -> TI a) -> (TypeSubst, a) -> Expression -> TI (TypeSubst, a)
     mergeExprTypes merge (stAcc, tys) expr = withValues Map.empty $ do
       modifyEnv $ apply stAcc
@@ -134,7 +129,7 @@ inferExpressionType' = \case
   Var name -> do
     resMaybe <- lookupValue name
     case resMaybe of
-      Nothing -> lift . throwE $ UnboundVariableError name
+      Nothing -> lift . throwErr $ UnboundVariableError name
       Just scheme -> (Map.empty,) <$> instantiate scheme
   Let bindings body -> do
     stDefs <- resolveDeclarationList bindings
@@ -158,10 +153,7 @@ resolveDeclaration st = \case
     pure st
   (DefValue name expr) -> do
     -- Create a temporary scheme (needed for recursive definitions)
-    tyMaybe <- lookupValue name
-    typeDefn <- case tyMaybe of
-      Just ty' -> instantiate ty'
-      Nothing -> pure TUnknown
+    typeDefn <- lookupValue name >>= maybe (pure TUnknown) instantiate
 
     env <- getEnv
     tmpTypeScheme <- generalize (apply st env) <$> newTypeVar "t"
@@ -197,16 +189,11 @@ checkExpressionType expr ty = do
 
 -- | Verify type signature of block
 checkBlockType :: Block -> TI ()
-checkBlockType (Module _ blocks) = foldM accBlockEnv () blocks
-  where
-    accBlockEnv _ b = checkBlockType b
-checkBlockType (Def def) = do
-  st <- resolveDeclaration Map.empty def
-  modifyEnv $ apply st
+checkBlockType (Module _ blocks) = mapM_ checkBlockType blocks
+checkBlockType (Def def) = resolveDeclaration Map.empty def >>= (modifyEnv . apply)
 checkBlockType (TypeAliasDef name ty) = do
   env <- getEnv
-  let tsch = generalize env ty
-  defineTypeAliases $ Map.singleton name tsch
+  defineTypeAliases $ Map.singleton name (generalize env ty)
 
 -- | Type check module (module block)
 checkModule :: Block -> TI ()
