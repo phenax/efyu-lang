@@ -80,7 +80,7 @@ unify t t' = case (t, t') of
       ty'M <- lookupType name
       case ty'M of
         Just tsch -> instantiate tsch >>= unify ty
-        Nothing -> pure Map.empty
+        Nothing -> lift . throwErr $ UnboundTypeError name
     bindTypeVar name = \case
       TVar n | n == name -> pure Map.empty
       ty

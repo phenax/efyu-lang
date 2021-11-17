@@ -65,58 +65,6 @@ tests =
         -- let getType m = runTI (envTypes <$> checkModuleWithEnv m)
         -- let getDebug m = runTI (envDebugEnvs <$> checkModuleWithEnv m)
         it "should check modules" $ do
-          -- -- Too many args. expected 0 on inline
-          -- checkM
-          --   ( Module
-          --       "Hello"
-          --       [ Def . DefSignature (ident "foobar") $ TInt `TApply` TInt,
-          --         Def . DefValue (ident "foobar") $ int 5
-          --       ]
-          --   )
-          --   `shouldReturn` Right ()
-          -- -- Too many args. expected 0 on name
-
-          -- checkM
-          --   ( Module
-          --       "Hello"
-          --       [ TypeAliasDef (ident "Pair") TString,
-          --         Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt,
-          --         Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
-          --       ]
-          --   )
-          --   `shouldReturn` Right ()
-          -- -- Too many args
-
-          -- checkM
-          --   ( Module
-          --       "Hello"
-          --       [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", TInt]),
-          --         Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
-          --         Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
-          --       ]
-          --   )
-          --   `shouldReturn` Right ()
-
-          -- -- Type not found
-          -- checkM
-          --   ( Module
-          --       "Hello"
-          --       [ Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
-          --         Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
-          --       ]
-          --   )
-          --   `shouldReturn` Right ()
-
-          -- -- TODO: Should error out as TestType is not defined
-          -- checkM
-          --   ( Module
-          --       "Hello"
-          --       [ Def . DefSignature (ident "foobar") $ TName (ident "TestType"),
-          --         Def . DefValue (ident "foobar") $ int 5
-          --       ]
-          --   )
-          --   `shouldReturn` Right ()
-
           checkM
             ( Module
                 "Hello"
@@ -135,6 +83,16 @@ tests =
                 ]
             )
             `shouldReturn` Right ()
+
+          checkM
+            ( Module
+                "Hello"
+                [ Def . DefSignature (ident "foobar") $ TName (ident "TestType"),
+                  Def . DefValue (ident "foobar") $ int 5
+                ]
+            )
+            `shouldReturn` Left (UnboundTypeError . ident $ "TestType")
+
           checkM
             ( Module
                 "Hello"
@@ -144,6 +102,40 @@ tests =
                 ]
             )
             `shouldReturn` Left (TypeUnificationError TInt TString)
+          checkM
+            ( Module
+                "Hello"
+                [ Def . DefSignature (ident "foobar") $ TInt `TApply` TInt,
+                  Def . DefValue (ident "foobar") $ int 5
+                ]
+            )
+            `shouldReturn` Left (KindMismatchError TInt TInt)
+          checkM
+            ( Module
+                "Hello"
+                [ TypeAliasDef (ident "Pair") TString,
+                  Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt,
+                  Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
+                ]
+            )
+            `shouldReturn` Left (KindMismatchError TString TInt)
+          checkM
+            ( Module
+                "Hello"
+                [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
+                  Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
+                  Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
+                ]
+            )
+            `shouldReturn` Left (KindMismatchError (TTuple [TInt, TFloat]) TString)
+          checkM
+            ( Module
+                "Hello"
+                [ Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
+                  Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
+                ]
+            )
+            `shouldReturn` Left (UnboundTypeError . ident $ "Pair")
 
     describe "Inference" $ do
       let infer = runTI . inferExpressionType
