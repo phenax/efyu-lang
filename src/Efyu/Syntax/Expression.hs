@@ -70,9 +70,7 @@ applyP :: MParser Expression
 applyP = withLineFold $ \sp -> do
   fn <- try varP <|> withParens expressionP
   params <- argListParser sp []
-  if null params
-    then pure fn
-    else pure $ foldl' Apply fn params
+  pure $ foldl' Apply fn params
   where
     argListParser sp ls = do
       let argP = sp >> (literalP <|> varP <|> withParens expressionP)

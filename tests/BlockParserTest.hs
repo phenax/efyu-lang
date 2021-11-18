@@ -111,6 +111,16 @@ foobar : DummyInt
           [ TypeDef (IdentifierName "DummyInt") TInt,
             Def $ defSig "foobar" (tname "DummyInt")
           ]
+    it "should parse type scoped definitions" $ do
+      parse
+        [r|
+type MyPair a b = (a, b)
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeDef (IdentifierName "MyPair") $
+              ident "a" `TScope` (ident "b" `TScope` TTuple [tvar "a", tvar "b"])
+          ]
 
     it "should parse complex type aliases" $ do
       parse
