@@ -111,6 +111,6 @@ foobar : DummyInt
 |]
         `shouldParse` Module
           "Main"
-          [ TypeAliasDef (IdentifierName "DummyInt") TInt,
+          [ TypeDef (IdentifierName "DummyInt") TInt,
             Def $ defSig "foobar" (tname "DummyInt")
           ]

@@ -17,7 +17,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TScope (ident "b") $ TTuple [tvar "a", tvar "b"]),
+            [ TypeDef (ident "Pair") $ TScope (ident "a") (TScope (ident "b") $ TTuple [tvar "a", tvar "b"]),
               Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
               Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
             ]
@@ -26,7 +26,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "DummyInt") TInt,
+            [ TypeDef (ident "DummyInt") TInt,
               Def . DefSignature (ident "foobar") $ TName (ident "DummyInt"),
               Def . DefValue (ident "foobar") $ int 5
             ]
@@ -36,7 +36,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "Dummy") $ ident "a" `TScope` (ident "b" `TScope` (ident "c" `TScope` TTuple [tvar "b", tvar "a", tvar "c"])),
+            [ TypeDef (ident "Dummy") $ ident "a" `TScope` (ident "b" `TScope` (ident "c" `TScope` TTuple [tvar "b", tvar "a", tvar "c"])),
               Def . DefSignature (ident "foobar") $ TName (ident "Dummy") `TApply` TInt `TApply` TString `TApply` TFloat,
               Def . DefValue (ident "foobar") $ tuple [str "x", int 5, float 2.0]
             ]
@@ -47,7 +47,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", tvar "b"])
+            [ TypeDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", tvar "b"])
             ]
         )
         `shouldReturn` Left (UnboundPolyTypeError $ ident "b")
@@ -65,7 +65,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "DummyStr") TString,
+            [ TypeDef (ident "DummyStr") TString,
               Def . DefSignature (ident "foobar") $ TName (ident "DummyStr"),
               Def . DefValue (ident "foobar") $ int 5
             ]
@@ -84,7 +84,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "Pair") TString,
+            [ TypeDef (ident "Pair") TString,
               Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt,
               Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
             ]
@@ -94,7 +94,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
+            [ TypeDef (ident "Pair") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
               Def . DefSignature (ident "foobar") $ TName (ident "Pair") `TApply` TInt `TApply` TString,
               Def . DefValue (ident "foobar") $ tuple [int 5, str "wow"]
             ]
@@ -114,7 +114,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "Fancy") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
+            [ TypeDef (ident "Fancy") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
               Def . defSig "a" $ tname "Fancy",
               Def . defVal "a" $ tuple [int 2, float 2.0]
             ]
@@ -123,7 +123,7 @@ tests =
       checkM
         ( Module
             "Hello"
-            [ TypeAliasDef (ident "Fancy") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
+            [ TypeDef (ident "Fancy") $ TScope (ident "a") (TTuple [tvar "a", TFloat]),
               Def . defSig "a" $ TName (ident "Fancy")
             ]
         )
@@ -131,16 +131,16 @@ tests =
 
     describe "type constructor" $ do
       let maybeT =
-            TypeAliasDef
+            TypeDef
               (ident "Maybe")
               $ TScope (ident "a") $
                 TCtors
                   [ Constructor TUnknown (ident "Just") [tvar "a"],
                     Constructor TUnknown (ident "Nothing") []
                   ]
-      let maybeForIntT = TypeAliasDef (ident "MaybeInt") $ tname "Maybe" `TApply` TInt
+      let maybeForIntT = TypeDef (ident "MaybeInt") $ tname "Maybe" `TApply` TInt
       let maybeIntT =
-            TypeAliasDef
+            TypeDef
               (ident "MaybeInt")
               $ TCtors
                 [ Constructor TUnknown (ident "Just") [TInt],

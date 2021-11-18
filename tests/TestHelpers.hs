@@ -35,6 +35,6 @@ defVal = DefValue . ident
 
 defSig = DefSignature . ident
 
-typeAlias = TypeAliasDef . ident
+typeAlias = TypeDef . ident
 
 tname = TName . ident

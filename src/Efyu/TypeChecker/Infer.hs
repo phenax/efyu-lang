@@ -225,7 +225,7 @@ checkExpressionType expr ty = do
 checkBlockType :: Block -> TI ()
 checkBlockType (Module _ blocks) = mapM_ checkBlockType blocks
 checkBlockType (Def def) = resolveDeclaration Map.empty def >>= (modifyEnv . apply)
-checkBlockType (TypeAliasDef name ty) = do
+checkBlockType (TypeDef name ty) = do
   verifyTypeVars ty Set.empty
   defineTypeAliases . Map.singleton name . TypeScheme (Set.toList $ freeTypeVars ty) $ ty
   flattenScope [] ty

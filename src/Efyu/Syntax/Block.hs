@@ -10,7 +10,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 data Block
   = Module String [Block]
   | Def Definition
-  | TypeAliasDef (IdentifierName 'TypeName) Type
+  | TypeDef (IdentifierName 'TypeName) Type
   deriving (Show, Eq)
 
 defineFnP :: MParser Block
@@ -22,7 +22,7 @@ typeAliasP = withLineFold $ \sp -> do
   name <- typeIdentifier <* sp <* L.symbol sp "="
   -- TODO: forall poly vars
   ty <- typeP sp
-  pure $ TypeAliasDef name ty
+  pure $ TypeDef name ty
 
 blockDeclrP :: (MParser Block -> MParser Block) -> MParser [Block]
 blockDeclrP pre = (pre p `sepBy` scnl) <* scnl
