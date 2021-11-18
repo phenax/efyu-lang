@@ -2,13 +2,9 @@ module Efyu.TypeChecker.Env where
 
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.State
-import Data.Foldable (Foldable (foldl'))
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set
 import Efyu.TypeChecker.FreeTypeVars
 import Efyu.Types
-import Efyu.Utils (mapDeleteKeys)
 
 composeSubst :: TypeSubst -> TypeSubst -> TypeSubst
 composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1
@@ -26,8 +22,7 @@ data TypeEnv = TypeEnv
     -- | type names defined in the environment
     envTypes :: TypeMap,
     -- | contructors for types
-    envConstructors :: Map.Map (IdentifierName 'ContructorName) TypeScheme,
-    envDebugEnvs :: Map.Map String Type
+    envConstructors :: Map.Map (IdentifierName 'ContructorName) TypeScheme
   }
 
 type WithEnv = StateT TypeEnv
@@ -44,8 +39,7 @@ emptyEnv =
     { envPolyTypeIndex = 0,
       envValues = Map.empty,
       envTypes = Map.empty,
-      envConstructors = Map.empty,
-      envDebugEnvs = Map.empty
+      envConstructors = Map.empty
     }
 
 runWithEnv :: (MonadIO m) => WithEnv m a -> m a
@@ -81,24 +75,6 @@ defineTypeAliases tyMap =
 
 lookupType :: (MonadIO m) => IdentifierName 'TypeName -> WithEnv m (Maybe TypeScheme)
 lookupType name = Map.lookup name . envTypes <$> getEnv
-
-instance FreeTypeVar Type where
-  freeTypeVars = \case
-    TVar name -> Set.singleton name
-    TLambda p r -> freeTypeVars p `Set.union` freeTypeVars r
-    TTuple tys -> foldl' Set.union Set.empty . map freeTypeVars $ tys
-    TList ty -> freeTypeVars ty
-    _ -> Set.empty
-  apply sub = \case
-    TLambda p r -> TLambda (apply sub p) (apply sub r)
-    TVar n -> fromMaybe (TVar n) $ Map.lookup n sub
-    TTuple tys -> TTuple . map (apply sub) $ tys
-    TList ty -> TList $ apply sub ty
-    t -> t
-
-instance FreeTypeVar TypeScheme where
-  freeTypeVars (TypeScheme vars t) = Set.difference (freeTypeVars t) (Set.fromList vars)
-  apply s (TypeScheme vars t) = TypeScheme vars (apply (mapDeleteKeys vars s) t)
 
 instance FreeTypeVar TypeEnv where
   freeTypeVars = freeTypeVars . Map.elems . envValues

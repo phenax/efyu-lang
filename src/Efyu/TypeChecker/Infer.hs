@@ -71,7 +71,9 @@ collapseTypeApply (TName name) typaram = do
 collapseTypeApply (TApply tylam' typaram') typaram =
   collapseTypeApply tylam' typaram' >>= uncurry resolveType
   where
-    resolveType st (TScope arg ty') = pure (Map.insert arg typaram st, ty')
+    resolveType st (TScope arg ty') = pure (st', apply st' ty')
+      where
+        st' = Map.insert arg typaram st
     resolveType _ ty = lift . throwErr $ KindMismatchError ty typaram
 collapseTypeApply ty typaram = lift . throwErr $ KindMismatchError ty typaram
 
