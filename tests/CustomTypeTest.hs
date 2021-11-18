@@ -138,7 +138,7 @@ tests =
                   [ Constructor TUnknown (ident "Just") [tvar "a"],
                     Constructor TUnknown (ident "Nothing") []
                   ]
-      -- let maybeForIntT = TypeAliasDef (ident "MaybeInt") $ tname "Maybe" `TApply` TInt
+      let maybeForIntT = TypeAliasDef (ident "MaybeInt") $ tname "Maybe" `TApply` TInt
       let maybeIntT =
             TypeAliasDef
               (ident "MaybeInt")
@@ -185,6 +185,17 @@ tests =
                 Def . defVal "a" $ Ctor (ident "Just") `call` int 5
               ]
           )
-          `shouldReturn` Right (Just . TypeScheme [] $ tname "Maybe" `TApply` tvar "a")
+          `shouldReturn` Right (Just . TypeScheme [] $ tname "Maybe" `TApply` TInt)
+        getValType
+          "a"
+          ( Module
+              "Hello"
+              [ maybeT,
+                maybeForIntT,
+                Def . defSig "a" $ tname "MaybeInt",
+                Def . defVal "a" $ Ctor (ident "Just") `call` int 5
+              ]
+          )
+          `shouldReturn` Right (Just . TypeScheme [] $ tname "MaybeInt")
 
 ---

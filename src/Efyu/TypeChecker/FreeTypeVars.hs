@@ -30,12 +30,16 @@ instance FreeTypeVar Type where
     TLambda p r -> freeTypeVars p `Set.union` freeTypeVars r
     TTuple tys -> foldl' Set.union Set.empty . map freeTypeVars $ tys
     TList ty -> freeTypeVars ty
+    TApply ty ty' -> freeTypeVars ty `Set.union` freeTypeVars ty'
+    TScope _ ty -> freeTypeVars ty
     _ -> Set.empty
   apply st = \case
     TLambda p r -> TLambda (apply st p) (apply st r)
     TVar n -> fromMaybe (TVar n) $ Map.lookup n st
     TTuple tys -> TTuple . map (apply st) $ tys
     TList ty -> TList $ apply st ty
+    TApply ty ty' -> TApply (apply st ty) (apply st ty')
+    -- TScope var ty -> TScope var $ apply st ty
     t -> t
 
 instance FreeTypeVar TypeScheme where
