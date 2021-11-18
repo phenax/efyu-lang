@@ -227,8 +227,7 @@ checkBlockType (Module _ blocks) = mapM_ checkBlockType blocks
 checkBlockType (Def def) = resolveDeclaration Map.empty def >>= (modifyEnv . apply)
 checkBlockType (TypeAliasDef name ty) = do
   verifyTypeVars ty Set.empty
-  env <- getEnv
-  defineTypeAliases $ Map.singleton name (generalize env ty)
+  defineTypeAliases . Map.singleton name . TypeScheme (Set.toList $ freeTypeVars ty) $ ty
   flattenScope [] ty
   where
     flattenScope vars (TScope var ty') = flattenScope (var : vars) ty'
