@@ -103,14 +103,39 @@ num a b = c
     it "should parse definitions along with annotations" $ do
       parse
         [r|
-
-type alias DummyInt = Int
-
+type DummyInt = Int
 foobar : DummyInt
-
 |]
         `shouldParse` Module
           "Main"
           [ TypeDef (IdentifierName "DummyInt") TInt,
             Def $ defSig "foobar" (tname "DummyInt")
           ]
+
+    it "should parse complex type aliases" $ do
+      parse
+        [r|
+type MyType1 = (Int, a, (b, String), Fancy (Maybe Int) Float)
+type MyType2 = Int -> [Int] -> Maybe Int
+type MyType3 = SomeType a String Float
+type MyType4 = [[(Int, a -> b)]]
+
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeDef (IdentifierName "MyType1") $
+              TTuple
+                [ TInt,
+                  tvar "a",
+                  TTuple [tvar "b", TString],
+                  tname "Fancy" `TApply` (tname "Maybe" `TApply` TInt) `TApply` TFloat
+                ],
+            TypeDef (IdentifierName "MyType2") $
+              TInt `tlam` TList TInt `tlam` (tname "Maybe" `TApply` TInt),
+            TypeDef (IdentifierName "MyType3") $
+              tname "SomeType" `TApply` tvar "a" `TApply` TString `TApply` TFloat,
+            TypeDef (IdentifierName "MyType4") $
+              TList $ TList $ TTuple [TInt, tvar "a" `tlam` tvar "b"]
+          ]
+
+---

@@ -18,7 +18,7 @@ defineFnP = Def <$> definitionP
 
 typeAliasP :: MParser Block
 typeAliasP = withLineFold $ \sp -> do
-  L.symbol sp "type" >> L.symbol sp "alias"
+  L.symbol sp "type"
   name <- typeIdentifier <* sp <* L.symbol sp "="
   -- TODO: forall poly vars
   ty <- typeP sp

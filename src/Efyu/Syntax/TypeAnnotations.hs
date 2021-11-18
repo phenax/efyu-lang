@@ -1,7 +1,9 @@
 module Efyu.Syntax.TypeAnnotations where
 
+import Data.Foldable (Foldable (foldl'))
 import Efyu.Syntax.Utils
 import Efyu.Types
+import Efyu.Utils (debugM)
 import Text.Megaparsec
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -15,7 +17,7 @@ tTupleP sp = TTuple <$> p
   where
     p = L.symbol sc "(" >> (typeP sp `sepBy1` L.symbol sp ",") <* sc <* L.symbol sc ")"
 
-tNameP _sp = do
+tNameP = do
   name <- typeIdentifier
   pure $ case name of
     IdentifierName "Int" -> TInt
@@ -24,17 +26,33 @@ tNameP _sp = do
     IdentifierName "Bool" -> TBool
     n -> TName n
 
-tVarP = TVar <$> polyTypeIdentifier
+tVarP sp = TVar <$> polyTypeIdentifier <* sp
+
+tApplyP :: MParser () -> MParser Type
+tApplyP sp = do
+  name <- tNameP
+  params <- try $ argListParser []
+  pure $ foldl' TApply name params
+  where
+    argListParser ls = do
+      let argP = sp >> (tNameP <|> try (tAtomP sp) <?> "<fuckkk>")
+      optn <- optional . try $ argP
+      sc
+      case optn of
+        Nothing -> pure ls
+        Just p -> argListParser $ ls ++ [p]
 
 tAtomP :: MParser () -> MParser Type
 tAtomP sp =
-  (try . withOptionalParens $ tNameP sp)
-    <|> (try . withOptionalParens $ tVarP)
-    <|> tListP sp
-    <|> (try . parens $ tLambdaP sp)
+  optParens (tListP sp)
+    <|> optParens (tApplyP sp)
+    <|> optParens tNameP
+    <|> optParens (tVarP sp)
+    <|> parens (tLambdaP sp)
     <|> tTupleP sp
   where
-    parens = withParens
+    parens = try . withParens
+    optParens = try . withOptionalParens
 
 tLambdaP :: MParser () -> MParser Type
 tLambdaP sp = do
@@ -46,10 +64,12 @@ tLambdaP sp = do
     mergety (ty : tys) = TLambda ty $ mergety tys
 
 typeP :: MParser () -> MParser Type
-typeP sp = try (tLambdaP sp) <?> "<type>"
+typeP sp = try (tLambdaP sp) <|> try (tApplyP sp) <?> "<type>"
 
 typeAnnotationP :: MParser Definition
 typeAnnotationP = withLineFold $ \sp -> do
   name <- varIdentifier <* sp
   L.symbol sp ":"
-  DefSignature name <$> (typeP sp <* sc)
+  DefSignature name <$> typeP sp <* scnl
+
+--
