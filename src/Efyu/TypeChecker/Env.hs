@@ -13,6 +13,8 @@ type ValueMap = Map.Map (IdentifierName 'VarName) TypeScheme
 
 type TypeMap = Map.Map (IdentifierName 'TypeName) TypeScheme
 
+type ConstructorMap = Map.Map (IdentifierName 'ConstructorName) Constructor
+
 -- | Environment state for type inference
 data TypeEnv = TypeEnv
   { -- | index for generating new poly type names from
@@ -22,7 +24,7 @@ data TypeEnv = TypeEnv
     -- | type names defined in the environment
     envTypes :: TypeMap,
     -- | contructors for types
-    envConstructors :: Map.Map (IdentifierName 'ContructorName) TypeScheme
+    envConstructors :: ConstructorMap
   }
 
 type WithEnv = StateT TypeEnv
@@ -69,12 +71,19 @@ withValues names blockM = do
   modify $ updateValues (const $ envValues oldEnv)
   pure res
 
+defineTypeConstructors :: (MonadIO m) => ConstructorMap -> WithEnv m ()
+defineTypeConstructors tyMap =
+  modifyEnv $ \env -> env {envConstructors = envConstructors env `Map.union` tyMap}
+
 defineTypeAliases :: (MonadIO m) => TypeMap -> WithEnv m ()
 defineTypeAliases tyMap =
   modifyEnv $ \env -> env {envTypes = envTypes env `Map.union` tyMap}
 
 lookupType :: (MonadIO m) => IdentifierName 'TypeName -> WithEnv m (Maybe TypeScheme)
 lookupType name = Map.lookup name . envTypes <$> getEnv
+
+lookupConstructor :: (MonadIO m) => IdentifierName 'ConstructorName -> WithEnv m (Maybe Constructor)
+lookupConstructor name = Map.lookup name . envConstructors <$> getEnv
 
 instance FreeTypeVar TypeEnv where
   freeTypeVars = freeTypeVars . Map.elems . envValues

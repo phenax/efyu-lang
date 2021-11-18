@@ -10,7 +10,7 @@ data Literal
   deriving (Show, Eq)
 
 -- | Set of identifier types
-data IdentifierType = VarName | PolyTypeName | TypeName | ContructorName
+data IdentifierType = VarName | PolyTypeName | TypeName | ConstructorName
 
 -- | Identifier constructor
 newtype IdentifierName (t :: IdentifierType) = IdentifierName {getIdentifier :: String}
@@ -31,11 +31,16 @@ data Expression
   | Apply Expression Expression
   | Lambda (IdentifierName 'VarName) Expression
   | IfElse Expression Expression Expression
+  | Ctor (IdentifierName 'ConstructorName)
   deriving (Show, Eq)
 
 -- | Polymorphic set of vars (forall a, b, c. Type)
 data TypeScheme
   = TypeScheme [IdentifierName PolyTypeName] Type
+  deriving (Show, Eq)
+
+-- | Constructor
+data Constructor = Constructor Type (IdentifierName 'ConstructorName) [Type]
   deriving (Show, Eq)
 
 data Type
@@ -50,5 +55,6 @@ data Type
   | TName (IdentifierName 'TypeName)
   | TApply Type Type
   | TScope (IdentifierName 'PolyTypeName) Type
+  | TCtors [Constructor]
   | TUnknown
   deriving (Show, Eq)

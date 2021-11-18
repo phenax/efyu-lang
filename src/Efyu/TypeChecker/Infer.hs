@@ -27,8 +27,8 @@ unify t t' = case (t, t') of
   (TUnknown, _) -> pure Map.empty
   (_, TUnknown) -> pure Map.empty
   (TList a, TList b) -> unify a b
-  (TName name, ty) -> bindTypeName name ty
-  (ty, TName name) -> bindTypeName name ty
+  (TName name, ty) -> bindLookupName lookupType UnboundTypeError name ty
+  (ty, TName name) -> bindLookupName lookupType UnboundTypeError name ty
   (TTuple as, TTuple bs)
     | length as == length bs ->
       foldl' composeSubst Map.empty <$> zipWithM unify as bs
@@ -44,11 +44,17 @@ unify t t' = case (t, t') of
     unifyTypeApply (tylam, typaram) ty = do
       (st, tyRes) <- collapseTypeApply tylam typaram
       unify (apply st tyRes) ty
-    bindTypeName name ty = do
-      ty'M <- lookupType name
+    bindLookupName ::
+      (IdentifierName a -> TI (Maybe TypeScheme)) ->
+      (IdentifierName a -> CompilerError) ->
+      IdentifierName a ->
+      Type ->
+      TI TypeSubst
+    bindLookupName lookup' err name ty = do
+      ty'M <- lookup' name
       case ty'M of
         Just tsch -> instantiate tsch >>= unify ty
-        Nothing -> lift . throwErr $ UnboundTypeError name
+        Nothing -> lift . throwErr $ err name
     bindTypeVar name = \case
       TVar n | n == name -> pure Map.empty
       ty
@@ -146,12 +152,21 @@ inferExpressionType' = \case
     subst <- unify ifT elseT
     let subst' = ifSt `Map.union` elseSt `Map.union` subst
     pure (subst', apply subst' $ higherSp ifT elseT)
+  Ctor name ->
+    lookupConstructor name >>= \case
+      Just (Constructor ty _ []) -> pure (Map.empty, ty)
+      Just (Constructor ty _ (tp : tps)) -> pure (Map.empty, foldl' TLambda tp tps `TLambda` ty)
+      Nothing -> lift . throwErr $ UnboundConstructorError name
 
 -- | Check if type doesn't use kinds illegally
 verifyValidKind :: Type -> TI ()
 verifyValidKind ty@(TScope _ _) = lift . throwErr $ IllegalKindError ty
 verifyValidKind (TLambda tyP tyB) = verifyValidKind tyP >> verifyValidKind tyB
-verifyValidKind (TName name) = lookupType name >>= maybe (pure ()) (instantiate >=> verifyValidKind)
+verifyValidKind (TName name) =
+  lookupType name
+    >>= maybe
+      (lift . throwErr $ UnboundTypeError name)
+      (instantiate >=> verifyValidKind)
 verifyValidKind _ = pure ()
 
 verifyTypeVars :: Type -> TypeVars -> TI ()
@@ -214,6 +229,15 @@ checkBlockType (TypeAliasDef name ty) = do
   verifyTypeVars ty Set.empty
   env <- getEnv
   defineTypeAliases $ Map.singleton name (generalize env ty)
+  flattenScope [] ty
+  where
+    flattenScope vars (TScope var ty') = flattenScope (var : vars) ty'
+    flattenScope vars (TCtors ctors) =
+      defineTypeConstructors . Map.fromList . map toCtor $ ctors
+      where
+        toCtor (Constructor _ n tps) = (n, Constructor cType n tps)
+        cType = foldl' TApply (TName name) . map TVar $ vars
+    flattenScope _ _ = pure ()
 
 -- | Type check module (module block)
 checkModule :: Block -> TI ()

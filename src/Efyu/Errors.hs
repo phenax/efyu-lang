@@ -9,6 +9,7 @@ data CompilerError
   | UnboundVariableError (IdentifierName 'VarName)
   | UnboundTypeError (IdentifierName 'TypeName)
   | UnboundPolyTypeError (IdentifierName 'PolyTypeName)
+  | UnboundConstructorError (IdentifierName 'ConstructorName)
   | OccursError (IdentifierName 'PolyTypeName)
   | KindMismatchError Type Type
   | IllegalKindError Type
@@ -28,7 +29,10 @@ instance Show CompilerError where
       "occur check failed: Type var " ++ name ++ " already exists"
     KindMismatchError ty typaram ->
       "kind signature doesn't match. unable to apply: " ++ show ty ++ " (" ++ show typaram ++ ")"
-    IllegalKindError ty -> "expected type but got kind: " ++ show ty
+    IllegalKindError ty ->
+      "expected type but got kind: " ++ show ty
+    UnboundConstructorError (IdentifierName name) ->
+      "reference to undefined constructor: " ++ name
 
 type WithCompilerError = ExceptT CompilerError
 
