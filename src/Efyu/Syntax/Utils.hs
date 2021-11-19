@@ -58,6 +58,9 @@ polyTypeIdentifier = IdentifierName <$> lowerIdentifier
 typeIdentifier :: MParser (IdentifierName 'TypeName)
 typeIdentifier = IdentifierName <$> upperIdentifier
 
+constructorIdentifier :: MParser (IdentifierName 'ConstructorName)
+constructorIdentifier = IdentifierName <$> upperIdentifier
+
 lowerIdentifier :: MParser String
 lowerIdentifier = do
   f <- lowerChar

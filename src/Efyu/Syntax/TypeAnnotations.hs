@@ -27,11 +27,20 @@ tNameP = do
 
 tVarP = TVar <$> polyTypeIdentifier
 
-tApplyP :: MParser () -> MParser Type
-tApplyP sp = do
-  name <- tNameP
-  params <- try $ argListParser []
-  pure $ foldl' TApply name params
+tConstructorP :: MParser () -> MParser Constructor
+tConstructorP sp = do
+  name <- constructorIdentifier
+  params <- try $ tTypeArgsP sp
+  pure $ Constructor TUnknown name params
+
+tSumTypeP :: MParser () -> MParser Type
+tSumTypeP sp = do
+  optional $ L.symbol sp "|"
+  TCtors <$> (tConstructorP sp `sepBy1` L.symbol sp "|")
+
+tTypeArgsP :: MParser () -> MParser [Type]
+tTypeArgsP sp = do
+  try $ argListParser []
   where
     argListParser ls = do
       let argP = sp >> (tNameP <|> try (tAtomP sp) <?> "<fuckkk>")
@@ -40,6 +49,12 @@ tApplyP sp = do
       case optn of
         Nothing -> pure ls
         Just p -> argListParser $ ls ++ [p]
+
+tApplyP :: MParser () -> MParser Type
+tApplyP sp = do
+  name <- tNameP
+  params <- try $ tTypeArgsP sp
+  pure $ foldl' TApply name params
 
 tAtomP :: MParser () -> MParser Type
 tAtomP sp =

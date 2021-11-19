@@ -17,21 +17,28 @@ data Block
 defineFnP :: MParser Block
 defineFnP = Def <$> definitionP
 
+dataDeclrP :: MParser Block
+dataDeclrP = withLineFold $ \sp -> do
+  L.symbol sp "data"
+  name <- typeIdentifier <* sp
+  args <- many (polyTypeIdentifier <* sp)
+  ty <- L.symbol sp "=" >> tSumTypeP sp
+  let tyScoped = foldr' TScope ty args
+  pure $ TypeDef name tyScoped
+
 typeAliasP :: MParser Block
 typeAliasP = withLineFold $ \sp -> do
   L.symbol sp "type"
   name <- typeIdentifier <* sp
   args <- many (polyTypeIdentifier <* sp)
-
   ty <- L.symbol sp "=" >> typeP sp
-
   let tyScoped = foldr' TScope ty args
   pure $ TypeDef name tyScoped
 
 blockDeclrP :: (MParser Block -> MParser Block) -> MParser [Block]
 blockDeclrP pre = (pre p `sepBy` scnl) <* scnl
   where
-    p = (typeAliasP <* scnl) <|> try (defineFnP <* scnl) <?> "<declaration>"
+    p = (dataDeclrP <* scnl) <|> (typeAliasP <* scnl) <|> try (defineFnP <* scnl) <?> "<declaration>"
 
 blockP :: String -> MParser Block
 blockP name = Module name <$> blockDeclrP nonIndented

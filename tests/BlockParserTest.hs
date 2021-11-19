@@ -165,4 +165,74 @@ type MyType4 = [[(Int, a -> b)]]
               TList $ TList $ TTuple [TInt, tvar "a" `tlam` tvar "b"]
           ]
 
+  describe "constructors + polym" $ do
+    it "should parse single constructors" $ do
+      parse
+        [r|
+data MyType = Hello Int
+|]
+        `shouldParse` Module
+          "Main"
+          [TypeDef (ident "MyType") $ TCtors [Constructor TUnknown (ident "Hello") [TInt]]]
+    it "should parse popular adts definitions" $ do
+      parse
+        [r|
+data Maybe a = Just a | Nothing
+data Either e x = Left e | Right x
+data List a = Nil | Cons a (List a)
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeDef (ident "Maybe") $
+              TScope (ident "a") $
+                TCtors
+                  [ Constructor TUnknown (ident "Just") [tvar "a"],
+                    Constructor TUnknown (ident "Nothing") []
+                  ],
+            TypeDef (ident "Either") $
+              TScope (ident "e") $
+                TScope (ident "x") $
+                  TCtors
+                    [ Constructor TUnknown (ident "Left") [tvar "e"],
+                      Constructor TUnknown (ident "Right") [tvar "x"]
+                    ],
+            TypeDef (ident "List") $
+              TScope (ident "a") $
+                TCtors
+                  [ Constructor TUnknown (ident "Nil") [],
+                    Constructor TUnknown (ident "Cons") [tvar "a", tname "List" `TApply` tvar "a"]
+                  ]
+          ]
+    it "should parse multiple constructors" $ do
+      parse
+        [r|
+data MyType a b = Hello Int a | World | Googa b
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeDef (ident "MyType") $
+              TScope (ident "a") $
+                TScope (ident "b") $
+                  TCtors
+                    [ Constructor TUnknown (ident "Hello") [TInt, tvar "a"],
+                      Constructor TUnknown (ident "World") [],
+                      Constructor TUnknown (ident "Googa") [tvar "b"]
+                    ]
+          ]
+      parse
+        [r|
+data MyType = | Hello Int | World | Googa a
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeDef (ident "MyType") $
+              TCtors
+                [ Constructor TUnknown (ident "Hello") [TInt],
+                  Constructor TUnknown (ident "World") [],
+                  Constructor TUnknown (ident "Googa") [tvar "a"]
+                ]
+          ]
+
+---
+
 ---
