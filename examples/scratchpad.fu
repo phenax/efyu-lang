@@ -58,8 +58,8 @@ fibo n =
 
 n = 5
 
--- myMaybeVal = Just 20
--- getItOut = fuckMaybe myMaybeVal
+myMaybeVal = Just 20
+getItOut = fuckMaybe myMaybeVal
 
 main =
   let

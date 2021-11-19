@@ -44,6 +44,9 @@ parameter = varIdentifier
 varP :: MParser Expression
 varP = Var <$> lexeme varIdentifier
 
+constructorP :: MParser Expression
+constructorP = Ctor <$> lexeme constructorIdentifier
+
 definitionP :: MParser Definition
 definitionP = try defP <|> typeAnnotationP
   where
@@ -68,12 +71,12 @@ lambdaP = withLineFold $ \sp -> do
 
 applyP :: MParser Expression
 applyP = withLineFold $ \sp -> do
-  fn <- try varP <|> withParens expressionP
+  fn <- try varP <|> try constructorP <|> withParens expressionP
   params <- argListParser sp []
   pure $ foldl' Apply fn params
   where
     argListParser sp ls = do
-      let argP = sp >> (literalP <|> varP <|> withParens expressionP)
+      let argP = sp >> (literalP <|> varP <|> constructorP <|> withParens expressionP)
       optn <- optional . try $ argP
       sc
       case optn of
