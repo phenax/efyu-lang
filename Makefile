@@ -19,5 +19,5 @@ test: hpack
 	$(CABAL) v2-test
 
 test-w:
-	$(NODEMON) --exec '(clear && make test) || true' -e .hs --ignore dist-newstyle
+	$(NODEMON) --exec '(clear && make test) || true' -e .hs,.fu --ignore dist-newstyle
 

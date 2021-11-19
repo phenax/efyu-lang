@@ -96,6 +96,7 @@ test-suite efyu-test
       BlockParserTest
       CustomTypeTest
       ExprParserTest
+      FuFilesTest
       TestHelpers
       TypeTest
       Efyu
@@ -128,6 +129,7 @@ test-suite efyu-test
   build-depends:
       base ==4.14.*
     , containers
+    , directory
     , hspec
     , hspec-megaparsec
     , megaparsec

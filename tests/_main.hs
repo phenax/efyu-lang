@@ -2,6 +2,7 @@ import qualified BlockParserTest
 import qualified CustomTypeTest
 import Efyu.Utils (debugM)
 import qualified ExprParserTest
+import qualified FuFilesTest
 import Test.Hspec
 import qualified TypeTest
 
@@ -12,3 +13,4 @@ main = hspec $ do
   ExprParserTest.tests
   TypeTest.tests
   CustomTypeTest.tests
+  FuFilesTest.tests

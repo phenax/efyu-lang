@@ -48,6 +48,7 @@ tests:
       - hspec
       - hspec-megaparsec
       - raw-strings-qq
+      - directory
       # - hspec-golden
     source-dirs:
       - tests/
