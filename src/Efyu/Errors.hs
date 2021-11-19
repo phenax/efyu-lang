@@ -2,7 +2,9 @@ module Efyu.Errors where
 
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
+import Data.Void (Void)
 import Efyu.Types
+import Text.Megaparsec.Error (ParseErrorBundle, errorBundlePretty)
 
 data CompilerError
   = TypeUnificationError Type Type
@@ -13,6 +15,7 @@ data CompilerError
   | OccursError (IdentifierName 'PolyTypeName)
   | KindMismatchError Type Type
   | IllegalKindError Type
+  | ParseError (ParseErrorBundle String Void)
   deriving (Eq)
 
 instance Show CompilerError where
@@ -33,6 +36,7 @@ instance Show CompilerError where
       "expected type but got kind: " ++ show ty
     UnboundConstructorError (IdentifierName name) ->
       "reference to undefined constructor: " ++ name
+    ParseError e -> errorBundlePretty e
 
 type WithCompilerError = ExceptT CompilerError
 
