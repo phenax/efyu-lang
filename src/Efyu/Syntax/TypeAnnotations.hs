@@ -36,7 +36,7 @@ tConstructorP sp = do
 tSumTypeP :: MParser () -> MParser Type
 tSumTypeP sp = do
   optional $ L.symbol sp "|"
-  TCtors <$> (tConstructorP sp `sepBy1` L.symbol sp "|")
+  TCtors <$> ((tConstructorP sp <* scnl) `sepBy1` L.symbol sp "|")
 
 tTypeArgsP :: MParser () -> MParser [Type]
 tTypeArgsP sp = do

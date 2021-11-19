@@ -233,6 +233,56 @@ data MyType = | Hello Int | World | Googa a
                 ]
           ]
 
+    it "should parse constructors with different layout formats" $ do
+      parse
+        [r|
+data MyType =
+  Hello Int |
+  World |
+  Googa a
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeDef (ident "MyType") $
+              TCtors
+                [ Constructor TUnknown (ident "Hello") [TInt],
+                  Constructor TUnknown (ident "World") [],
+                  Constructor TUnknown (ident "Googa") [tvar "a"]
+                ]
+          ]
+      parse
+        [r|
+data MyType =
+  | Hello Int
+  | World
+  | Googa a
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeDef (ident "MyType") $
+              TCtors
+                [ Constructor TUnknown (ident "Hello") [TInt],
+                  Constructor TUnknown (ident "World") [],
+                  Constructor TUnknown (ident "Googa") [tvar "a"]
+                ]
+          ]
+      parse
+        [r|
+data MyType
+  = Hello Int
+  | World
+  | Googa a
+|]
+        `shouldParse` Module
+          "Main"
+          [ TypeDef (ident "MyType") $
+              TCtors
+                [ Constructor TUnknown (ident "Hello") [TInt],
+                  Constructor TUnknown (ident "World") [],
+                  Constructor TUnknown (ident "Googa") [tvar "a"]
+                ]
+          ]
+
 ---
 
 ---
