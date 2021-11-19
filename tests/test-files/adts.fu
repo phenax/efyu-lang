@@ -1,0 +1,26 @@
+
+data Maybe a = Just a | Nothing
+
+data Either e a =
+  | Left e
+  | Right a
+
+eitherToMaybe : Either e a -> Maybe a
+
+err : e -> Either e a
+ok : a -> Either e a
+
+err = Left
+ok = Right
+
+thingsWentSmoothly : Bool
+
+result =
+  if thingsWentSmoothly then
+    ok 20
+  else
+    err "fuck"
+
+maybeData : Maybe Int
+maybeData = eitherToMaybe result
+
