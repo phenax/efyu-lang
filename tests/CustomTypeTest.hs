@@ -129,6 +129,20 @@ tests =
         )
         `shouldReturn` Left (IllegalKindError (TScope (ident "a") (TTuple [tvar "a", TFloat])))
 
+    it "should unify type correctly for nested type with alias" $ do
+      getValType
+        "result"
+        ( Module
+            "Hello"
+            [ TypeDef (ident "WithName") $ TScope (ident "a") (TTuple [TString, tvar "a"]),
+              Def . defSig "map" $ (tvar "a" `tlam` tvar "b") `tlam` TList (tvar "a") `tlam` TList (tvar "b"),
+              Def . defSig "result" $ TList (tname "WithName" `TApply` TInt),
+              Def . defVal "result" $
+                var "map" `call` ("x" *->> tuple [str "wow", var "x"]) `call` list [int 5, int 3]
+            ]
+        )
+        `shouldReturn` Right (Just . TypeScheme [] $ TList (tname "WithName" `TApply` TInt))
+
     describe "type constructor" $ do
       let maybeT =
             TypeDef

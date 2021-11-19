@@ -12,8 +12,7 @@
 --   = Left a
 --   | Right e
 
--- TODO: add syntax for type alias
--- type alias WithName a = (String, a)
+type WithName a = (String, a)
 
 type MyInt = Int
 
@@ -39,6 +38,9 @@ mapList fn ls =
 myList : [Int]
 myList = [1,2,3,4,5,6]
 
+addLabels : [Int] -> [WithName Int]
+addLabels = mapList (\x -> ("name", x))
+
 fibo : MyInt -> MyInt
 fibo n =
   if (lte? n 1) then
@@ -54,6 +56,6 @@ main =
   let
     result = fibo n
     newList = mapList (add 5) (mapList id myList)
-  in (result, newList, prepend 5 [])
+  in (result, addLabels newList, prepend 5 [])
 
 --
