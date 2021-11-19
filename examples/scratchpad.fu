@@ -6,11 +6,11 @@
 -- TODO: implement records (labelled product types)
 -- type User = User { id : Int, name : String }
 
--- TODO: implement adt
--- type Maybe a = Just a | Nothing
--- type Either a e
---   = Left a
---   | Right e
+data Maybe a = Just a | Nothing
+
+data Either a e =
+  | Left a
+  | Right e
 
 type WithName a = (String, a)
 
@@ -24,16 +24,22 @@ add : Int -> Int -> Int
 sub : Int -> Int -> Int
 
 null? : [a] -> Bool
-head : [a] -> a
+head : [a] -> Maybe a
 tail : [a] -> [a]
 prepend : a -> [a] -> [a]
 
+fuckMaybe : Maybe a -> a
+
 mapList : (a -> b) -> [a] -> [b]
 mapList fn ls =
-  if null? ls then
-    []
-  else
-    prepend (fn (head ls)) (mapList fn (tail ls))
+  let
+    x = fuckMaybe (head ls)
+    xs = tail ls
+  in
+    if null? ls then
+      []
+    else
+      prepend (fn x) xs
 
 myList : [Int]
 myList = [1,2,3,4,5,6]
@@ -52,10 +58,17 @@ fibo n =
 
 n = 5
 
+-- myMaybeVal = Just 20
+-- getItOut = fuckMaybe myMaybeVal
+
 main =
   let
     result = fibo n
     newList = mapList (add 5) (mapList id myList)
-  in (result, addLabels newList, prepend 5 [])
+  in (
+      result,
+      addLabels newList,
+      prepend 5 []
+    )
 
 --
