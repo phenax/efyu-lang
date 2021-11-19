@@ -3,7 +3,6 @@ module Efyu.Syntax.TypeAnnotations where
 import Data.Foldable (Foldable (foldl'))
 import Efyu.Syntax.Utils
 import Efyu.Types
-import Efyu.Utils (debugM)
 import Text.Megaparsec
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -26,7 +25,7 @@ tNameP = do
     IdentifierName "Bool" -> TBool
     n -> TName n
 
-tVarP sp = TVar <$> polyTypeIdentifier <* sp
+tVarP = TVar <$> polyTypeIdentifier
 
 tApplyP :: MParser () -> MParser Type
 tApplyP sp = do
@@ -45,9 +44,9 @@ tApplyP sp = do
 tAtomP :: MParser () -> MParser Type
 tAtomP sp =
   optParens (tListP sp)
+    <|> optParens tVarP
     <|> optParens (tApplyP sp)
     <|> optParens tNameP
-    <|> optParens (tVarP sp)
     <|> parens (tLambdaP sp)
     <|> tTupleP sp
   where

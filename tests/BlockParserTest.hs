@@ -75,6 +75,23 @@ dummy = 2
     it "should parse definitions along with annotations" $ do
       parse
         [r|
+fn : a -> a
+fn : a -> Int
+fn : Int -> a
+fn : T a -> a
+fn : a -> T a
+|]
+        `shouldParse` Module
+          "Main"
+          [ Def . defSig "fn" $ tvar "a" `tlam` tvar "a",
+            Def . defSig "fn" $ tvar "a" `tlam` TInt,
+            Def . defSig "fn" $ TInt `tlam` tvar "a",
+            Def . defSig "fn" $ (tname "T" `TApply` tvar "a") `tlam` tvar "a",
+            Def . defSig "fn" $ tvar "a" `tlam` (tname "T" `TApply` tvar "a")
+          ]
+    it "should parse definitions along with annotations" $ do
+      parse
+        [r|
 num : Int
 num = 20
 |]
