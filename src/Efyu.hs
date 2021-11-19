@@ -2,11 +2,11 @@ module Efyu where
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Efyu.Errors (CompilerError (ParseError))
-import Efyu.Syntax.Block (Block)
 import Efyu.Syntax.Parse
 import Efyu.TypeChecker.Infer
+import Efyu.Types
 
-typeCheckFile :: String -> IO (Either CompilerError Block)
+typeCheckFile :: String -> IO (Either CompilerError Module)
 typeCheckFile file = do
   ast <- parseFile file
   case ast of

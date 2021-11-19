@@ -8,12 +8,6 @@ import Efyu.Types
 import Text.Megaparsec
 import qualified Text.Megaparsec.Char.Lexer as L
 
-data Block
-  = Module String [Block]
-  | Def Definition
-  | TypeDef (IdentifierName 'TypeName) Type
-  deriving (Show, Eq)
-
 defineFnP :: MParser Block
 defineFnP = Def <$> definitionP
 
@@ -40,5 +34,5 @@ blockDeclrP pre = (pre p `sepBy` scnl) <* scnl
   where
     p = (dataDeclrP <* scnl) <|> (typeAliasP <* scnl) <|> try (defineFnP <* scnl) <?> "<declaration>"
 
-blockP :: String -> MParser Block
-blockP name = Module name <$> blockDeclrP nonIndented
+moduleP :: String -> MParser Module
+moduleP name = Module name <$> blockDeclrP nonIndented

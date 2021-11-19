@@ -1,7 +1,6 @@
 module CustomTypeTest where
 
 import Efyu.Errors
-import Efyu.Syntax.Block
 import Efyu.TypeChecker.Env
 import Efyu.TypeChecker.Infer
 import Efyu.Types
@@ -10,7 +9,7 @@ import TestHelpers
 
 tests =
   describe "Type checker" $ do
-    let checkM = runTI . checkBlockType
+    let checkM = runTI . checkModule
     let getValType name m = runTI (checkModuleWithEnv m >> lookupValue (ident name))
     -- let getDebug m = runTI (envDebugEnvs <$> checkModuleWithEnv m)
     it "should check module" $ do

@@ -10,7 +10,7 @@ import qualified Text.Megaparsec as MP
 import Text.RawString.QQ (r)
 
 tests = do
-  let parse = MP.parse (blockP "Main" <* eof) "testfile.fu"
+  let parse = MP.parse (moduleP "Main" <* eof) "testfile.fu"
 
   describe "define block statement" $ do
     it "should parse definitions into a main module" $ do

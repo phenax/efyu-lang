@@ -1,5 +1,13 @@
 module Efyu.Types where
 
+data Module = Module String [Block]
+  deriving (Show, Eq)
+
+data Block
+  = Def Definition
+  | TypeDef (IdentifierName 'TypeName) Type
+  deriving (Show, Eq)
+
 data Literal
   = LiteralString String
   | LiteralInt Integer

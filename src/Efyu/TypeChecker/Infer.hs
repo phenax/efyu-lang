@@ -7,7 +7,6 @@ import Data.List (foldl', sortBy)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Efyu.Errors
-import Efyu.Syntax.Block
 import Efyu.TypeChecker.Env
 import Efyu.TypeChecker.FreeTypeVars
 import Efyu.TypeChecker.Utils
@@ -223,7 +222,6 @@ checkExpressionType expr ty = do
 
 -- | Verify type signature of block
 checkBlockType :: Block -> TI ()
-checkBlockType (Module _ blocks) = mapM_ checkBlockType blocks
 checkBlockType (Def def) = resolveDeclaration Map.empty def >>= (modifyEnv . apply)
 checkBlockType (TypeDef name ty) = do
   verifyTypeVars ty Set.empty
@@ -238,13 +236,13 @@ checkBlockType (TypeDef name ty) = do
         cType = foldl' TApply (TName name) . map TVar $ vars
     flattenScope _ _ = pure ()
 
--- | Type check module (module block)
-checkModule :: Block -> TI ()
-checkModule = checkBlockType
+-- | Type check module
+checkModule :: Module -> TI ()
+checkModule (Module _ blocks) = mapM_ checkBlockType blocks
 
--- | Type check module (module block)
-checkModuleWithEnv :: Block -> TI TypeEnv
-checkModuleWithEnv b = checkBlockType b >> getEnv
+-- | Type check module and return env
+checkModuleWithEnv :: Module -> TI TypeEnv
+checkModuleWithEnv m = checkModule m >> getEnv
 
 ---
 ---
