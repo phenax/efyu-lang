@@ -11,6 +11,9 @@ pShow = T.unpack . Pretty.pShow
 debugM :: (Monad m, Show a) => a -> m ()
 debugM = flip trace (pure ()) . ("::::LOG:::: " ++) . pShow
 
+printStr :: (Monad m) => String -> m ()
+printStr = flip trace (pure ()) . ("::::PRINT:::: " ++)
+
 peekM :: (Monad m, Show a, Show b) => b -> m a -> m a
 peekM prefix m = do
   a <- m

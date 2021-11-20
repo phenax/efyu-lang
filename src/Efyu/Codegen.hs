@@ -1,4 +1,4 @@
-module Efyu.Compiler.Codegen where
+module Efyu.Codegen where
 
 data CodegenTargets
   = JavaScript Bool

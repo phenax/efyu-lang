@@ -21,6 +21,7 @@ dependencies:
   - pretty-simple
   - text
   - transformers
+  - raw-strings-qq
 
 default-extensions:
   - LambdaCase
@@ -47,7 +48,6 @@ tests:
     dependencies:
       - hspec
       - hspec-megaparsec
-      - raw-strings-qq
       - directory
       # - hspec-golden
     source-dirs:
