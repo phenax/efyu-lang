@@ -15,6 +15,8 @@ parens = between "(" ")"
 
 braces = between "{" "}"
 
+brackets = between "[" "]"
+
 printCommaList print' = intercalate "," . map print'
 
 printIdent (IdentifierName n) = n
@@ -37,11 +39,13 @@ printBlock (JsBlock stmts) = braces $ "\n" ++ indent (map printStatement stmts)
 
 printModuleItem :: JsModuleItem -> String
 printModuleItem (JsExport st) = "export " ++ printStatement st
+printModuleItem JsIgnoreM = "<<ignored>>"
 printModuleItem _ = "<<pending>>"
 
 printStatement :: JsStatement -> String
 printStatement (JsConstVar (IdentifierName name) val) = "const " ++ name ++ " = " ++ printExpression val ++ ";"
 printStatement (JsReturn val) = "return " ++ printExpression val
+printStatement JsIgnoreS = "<<ignored>>"
 printStatement _ = "<<pending>>"
 
 printExpression :: JsExpr -> String
@@ -50,5 +54,8 @@ printExpression (JsFunction args block) = parens (printCommaList printIdent args
 printExpression (JsLitString x) = show x
 printExpression (JsLitNumber x) = show x
 printExpression (JsLitBool x) = if x then "true" else "false"
+printExpression (JsLitList ls) = brackets . printCommaList printExpression $ ls
 printExpression (JsCall fn params) = "call" ++ parens (printCommaList printExpression (fn : params))
+printExpression (JsTernary condE ifE elseE) = printExpression condE ++ " ? " ++ printExpression ifE ++ " : " ++ printExpression elseE
+printExpression JsIgnoreE = "<<ignored>>"
 printExpression _ = "<<pending>>"

@@ -29,19 +29,20 @@ data JsModuleItem
   | JsIgnoreM
   deriving (Show, Eq)
 
+-- JsIfChain [(JsExpr, JsBlock)] (Maybe JsBlock)
 data JsStatement
   = JsConstVar (IdentifierName 'VarName) JsExpr
-  | JsIfChain [(JsExpr, JsBlock)] (Maybe JsBlock)
   | JsWhile JsExpr JsBlock
   | JsReturn JsExpr
   | JsIgnoreS
   deriving (Show, Eq)
 
 data JsExpr
-  = JsTernary JsExpr JsBlock JsBlock
+  = JsTernary JsExpr JsExpr JsExpr
   | JsLitString String
   | JsLitNumber Double
   | JsLitBool Bool
+  | JsLitList [JsExpr]
   | JsVar (IdentifierName 'VarName)
   | JsCall JsExpr [JsExpr]
   | JsProperty JsExpr (IdentifierName 'VarName)

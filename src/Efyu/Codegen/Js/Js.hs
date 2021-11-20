@@ -40,7 +40,10 @@ jsExpr (Literal lit) = case lit of
   LiteralInt n -> JsLitNumber (fromInteger n)
   LiteralFloat n -> JsLitNumber n
   LiteralBool b -> JsLitBool b
-  _ -> JsIgnoreE
+  LiteralList ls -> JsLitList . map jsExpr $ ls
+  LiteralTuple ls -> JsLitList . map jsExpr $ ls
+jsExpr (IfElse condE ifE elseE) =
+  JsTernary (jsExpr condE) (jsExpr ifE) (jsExpr elseE)
 jsExpr _ = JsIgnoreE
 
 jsModule :: Module -> JsModule
