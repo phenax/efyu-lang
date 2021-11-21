@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.5.
 --
 -- see: https://github.com/sol/hpack
 
@@ -19,6 +19,7 @@ library
       Efyu.Codegen.Js.Js
       Efyu.Codegen.Js.Printer
       Efyu.Codegen.Js.Types
+      Efyu.Codegen.Utils
       Efyu.Errors
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
@@ -62,6 +63,7 @@ executable efyu
       Efyu.Codegen.Js.Js
       Efyu.Codegen.Js.Printer
       Efyu.Codegen.Js.Types
+      Efyu.Codegen.Utils
       Efyu.Errors
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
@@ -113,6 +115,7 @@ test-suite efyu-test
       Efyu.Codegen.Js.Js
       Efyu.Codegen.Js.Printer
       Efyu.Codegen.Js.Types
+      Efyu.Codegen.Utils
       Efyu.Errors
       Efyu.Syntax.Block
       Efyu.Syntax.Expression
