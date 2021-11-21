@@ -11,7 +11,6 @@ import Efyu.TypeChecker.Env
 import Efyu.TypeChecker.FreeTypeVars
 import Efyu.TypeChecker.Utils
 import Efyu.Types
-import Efyu.Utils (debugM)
 
 type TI = WithEnv (WithCompilerError IO)
 
@@ -185,7 +184,22 @@ instance TypeInference Pattern where
       p <- newTypeVar "p"
       modifyEnv $ updateValues (Map.insert name $ TypeScheme [] p)
       pure (Map.empty, p)
-    _ -> undefined
+    PatCtor name params -> do
+      lookupConstructor name >>= \case
+        Just (Constructor _ _ patArgs)
+          | length patArgs /= length params ->
+            lift . throwErr $ UnboundConstructorError name
+        Just (Constructor ty _ []) -> pure (Map.empty, ty)
+        Just (Constructor ty _ tyArgs) -> do
+          let build st (pattern, tyArg) = do
+                (stPat, tyPat) <- infer pattern
+                stArg <- unify tyPat tyArg
+                let subst = st `composeSubst` stPat `composeSubst` stArg
+                pure subst
+
+          st <- foldM build Map.empty $ zip params tyArgs
+          pure (st, apply st ty)
+        Nothing -> lift . throwErr $ UnboundConstructorError name
 
 inferExpressionType :: Expression -> TI Type
 inferExpressionType expr = uncurry apply <$> infer expr
