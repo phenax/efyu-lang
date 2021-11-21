@@ -108,7 +108,7 @@ instance (TypeInference e) => TypeInference (Literal e) where
     where
       mergeListTy = mergeExprTypes (\t1 t2 -> higherSp t1 t2 <$ unify t1 t2)
       mergeTupleTy = mergeExprTypes (\ts t -> pure $ ts ++ [t])
-      mergeExprTypes merge (stAcc, tys) expr = withValues Map.empty $ do
+      mergeExprTypes merge (stAcc, tys) expr = do
         modifyEnv $ apply stAcc
         (st, ty) <- infer expr
         ty' <- merge tys ty

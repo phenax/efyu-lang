@@ -40,3 +40,16 @@ tests = do
               ]
         )
         `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a0")
+
+    it "should infer input type from pattern variables nested inside tuples" $ do
+      check
+        ( "x"
+            *->> CaseOf
+              (var "x")
+              [ CaseItem
+                  (PatLiteral $ LiteralTuple [PatLiteral $ LiteralInt 5, PatVar $ ident "ret"])
+                  defaultGuard
+                  (var "ret")
+              ]
+        )
+        `shouldReturn` Right (TTuple [TInt, tvar "'p3"] `tlam` tvar "'p3")
