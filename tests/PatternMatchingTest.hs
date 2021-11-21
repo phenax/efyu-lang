@@ -6,11 +6,11 @@ import Test.Hspec
 import TestHelpers
 
 tests = do
-  let check = runTI . inferExpressionType
+  let inferTy = runTI . inferExpressionType
 
   describe "Pattern matching > type inference" $ do
     it "should infer lambda type correctly" $ do
-      check
+      inferTy
         ( "x"
             *->> CaseOf
               (var "x")
@@ -21,7 +21,7 @@ tests = do
         `shouldReturn` Right (TInt `tlam` TString)
 
     it "should infer input type from guard" $ do
-      check
+      inferTy
         ( Let [defSig "gt0" $ TInt `tlam` TBool] $
             "x"
               *->> CaseOf
@@ -30,9 +30,18 @@ tests = do
                 ]
         )
         `shouldReturn` Right (TInt `tlam` TString)
+      inferTy
+        ( Let [defSig "gt0" $ TInt `tlam` TBool] $
+            "x"
+              *->> CaseOf
+                (var "x")
+                [ CaseItem (PatVar $ ident "x1") (var "gt0" `call` var "x1") (var "x1")
+                ]
+        )
+        `shouldReturn` Right (TInt `tlam` TInt)
 
     it "should infer input type from pattern variable" $ do
-      check
+      inferTy
         ( "x"
             *->> CaseOf
               (var "x")
@@ -42,7 +51,7 @@ tests = do
         `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a0")
 
     it "should infer input type from pattern variables nested inside tuples" $ do
-      check
+      inferTy
         ( "x"
             *->> CaseOf
               (var "x")
