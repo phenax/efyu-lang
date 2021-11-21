@@ -11,8 +11,12 @@ import Efyu.TypeChecker.Env
 import Efyu.TypeChecker.FreeTypeVars
 import Efyu.TypeChecker.Utils
 import Efyu.Types
+import Efyu.Utils (debugM)
 
 type TI = WithEnv (WithCompilerError IO)
+
+class TypeInference a where
+  infer :: a -> TI (TypeSubst, Type)
 
 runTI :: TI a -> IO (Either CompilerError a)
 runTI = runWithError . runWithEnv
@@ -92,71 +96,99 @@ instantiate (TypeScheme vars t) = do
 generalize :: TypeEnv -> Type -> TypeScheme
 generalize env t = flip TypeScheme t . Set.toList $ freeTypeVars t `Set.difference` freeTypeVars env
 
--- | Infer types of literals
-inferLiteralType :: Literal Expression -> TI (TypeSubst, Type)
-inferLiteralType = \case
-  LiteralInt _ -> pure (Map.empty, TInt)
-  LiteralString _ -> pure (Map.empty, TString)
-  LiteralBool _ -> pure (Map.empty, TBool)
-  LiteralFloat _ -> pure (Map.empty, TFloat)
-  LiteralList exprs -> second TList <$> foldM mergeListTy (Map.empty, TUnknown) exprs
-  LiteralTuple [] -> pure (Map.empty, TUnknown) -- TODO: Invalid case (maybe unit)
-  LiteralTuple exprs -> second TTuple <$> foldM mergeTupleTy (Map.empty, []) exprs
-  where
-    mergeListTy = mergeExprTypes (\t1 t2 -> higherSp t1 t2 <$ unify t1 t2)
-    mergeTupleTy = mergeExprTypes (\ts t -> pure $ ts ++ [t])
+instance (TypeInference e) => TypeInference (Literal e) where
+  infer = \case
+    LiteralInt _ -> pure (Map.empty, TInt)
+    LiteralString _ -> pure (Map.empty, TString)
+    LiteralBool _ -> pure (Map.empty, TBool)
+    LiteralFloat _ -> pure (Map.empty, TFloat)
+    LiteralList exprs -> second TList <$> foldM mergeListTy (Map.empty, TUnknown) exprs
+    LiteralTuple [] -> pure (Map.empty, TUnknown) -- TODO: Invalid case (maybe unit)
+    LiteralTuple exprs -> second TTuple <$> foldM mergeTupleTy (Map.empty, []) exprs
+    where
+      mergeListTy = mergeExprTypes (\t1 t2 -> higherSp t1 t2 <$ unify t1 t2)
+      mergeTupleTy = mergeExprTypes (\ts t -> pure $ ts ++ [t])
+      mergeExprTypes merge (stAcc, tys) expr = withValues Map.empty $ do
+        modifyEnv $ apply stAcc
+        (st, ty) <- infer expr
+        ty' <- merge tys ty
+        pure (stAcc `composeSubst` st, ty')
 
-    mergeExprTypes :: (a -> Type -> TI a) -> (TypeSubst, a) -> Expression -> TI (TypeSubst, a)
-    mergeExprTypes merge (stAcc, tys) expr = withValues Map.empty $ do
-      modifyEnv $ apply stAcc
-      (st, ty) <- inferExpressionType' expr
-      ty' <- merge tys ty
-      pure (stAcc `composeSubst` st, ty')
+instance TypeInference Expression where
+  infer = \case
+    Literal lit -> infer lit
+    Lambda param body -> do
+      typeVar <- newTypeVar "a"
+      let newVal = Map.singleton param (TypeScheme [] typeVar)
+      (bodySubst, bodyType) <- withValues newVal $ infer body
+      pure (bodySubst, TLambda (apply bodySubst typeVar) bodyType)
+    Apply lambda param -> do
+      typeVar <- newTypeVar "a"
+      (sl, tl) <- infer lambda
+      modifyEnv $ apply sl -- NOTE: not sure if this should be scoped to the parameter
+      (sp, tp) <- infer param
+      sres <- unify (apply sp tl) (TLambda tp typeVar)
+      pure (sres `composeSubst` sp `composeSubst` sl, apply sres typeVar)
+    Var name -> do
+      resMaybe <- lookupValue name
+      case resMaybe of
+        Nothing -> lift . throwErr $ UnboundVariableError name
+        Just scheme -> (Map.empty,) <$> instantiate scheme
+    Let bindings body -> do
+      stDefs <- resolveDeclarationList bindings
+      env <- getEnv
+      (stBody, tyBody) <- withValues (envValues $ apply stDefs env) $ infer body
+      pure (stDefs `composeSubst` stBody, tyBody)
+    IfElse cond ifE elseE -> do
+      (_, condT) <- infer cond
+      unify condT TBool -- Check if condition is boolean
+      (ifSt, ifT) <- infer ifE
+      (elseSt, elseT) <- infer elseE
+      subst <- unify ifT elseT
+      let subst' = ifSt `Map.union` elseSt `Map.union` subst
+      pure (subst', apply subst' $ higherSp ifT elseT)
+    Ctor name ->
+      lookupConstructor name >>= \case
+        Just (Constructor ty _ []) -> pure (Map.empty, ty)
+        Just (Constructor ty _ (tp : tps)) -> pure (Map.empty, foldl' TLambda tp tps `TLambda` ty)
+        Nothing -> lift . throwErr $ UnboundConstructorError name
+    CaseOf expr items -> do
+      (stIn, tyIn) <- infer expr
+      inTv <- newTypeVar "p"
+      retTv <- newTypeVar "p"
+      (stPat, tyPat, tyRet) <- foldM joinCase (Map.empty, inTv, retTv) items
+      stIn' <- unify tyIn tyPat
+      let st = stIn `composeSubst` stIn' `composeSubst` stPat
+      pure (st, apply st tyRet)
+    where
+      joinCase :: (TypeSubst, Type, Type) -> CaseItem -> TI (TypeSubst, Type, Type)
+      joinCase (st, tyI, tyR) item = do
+        (st', tyI', tyR') <- inferCase item
+        stI <- unify tyI' tyI
+        stR <- unify tyR' tyR
+        let subst = st `composeSubst` st' `composeSubst` stI `composeSubst` stR
+        pure (subst, apply subst tyI, apply subst tyR)
+      inferCase :: CaseItem -> TI (TypeSubst, Type, Type)
+      inferCase (CaseItem pat guard expr) = withValues Map.empty $ do
+        (stp, typ) <- infer pat
+        (stg, tyg) <- infer guard
+        unify tyg TBool -- Guard must be boolean
+        (ste, tye) <- infer expr
+        let subst = stp `composeSubst` stg `composeSubst` ste
+        pure (subst, apply subst typ, apply subst tye)
+
+instance TypeInference Pattern where
+  infer = \case
+    PatLiteral lit -> infer lit
+    PatWildcard -> (Map.empty,) <$> newTypeVar "p"
+    PatVar name -> do
+      p <- newTypeVar "p"
+      modifyEnv $ updateValues (Map.insert name $ TypeScheme [] p)
+      pure (Map.empty, p)
+    _ -> undefined
 
 inferExpressionType :: Expression -> TI Type
-inferExpressionType expr = do
-  (subst, ty) <- inferExpressionType' expr
-  pure $ apply subst ty
-
-inferExpressionType' :: Expression -> TI (TypeSubst, Type)
-inferExpressionType' = \case
-  Literal lit -> inferLiteralType lit
-  Lambda param body -> do
-    typeVar <- newTypeVar "a"
-    let newVal = Map.singleton param (TypeScheme [] typeVar)
-    (bodySubst, bodyType) <- withValues newVal $ inferExpressionType' body
-    pure (bodySubst, TLambda (apply bodySubst typeVar) bodyType)
-  Apply lambda param -> do
-    typeVar <- newTypeVar "a"
-    (sl, tl) <- inferExpressionType' lambda
-    modifyEnv $ apply sl -- NOTE: not sure if this should be scoped to the parameter
-    (sp, tp) <- inferExpressionType' param
-    sres <- unify (apply sp tl) (TLambda tp typeVar)
-    pure (sres `composeSubst` sp `composeSubst` sl, apply sres typeVar)
-  Var name -> do
-    resMaybe <- lookupValue name
-    case resMaybe of
-      Nothing -> lift . throwErr $ UnboundVariableError name
-      Just scheme -> (Map.empty,) <$> instantiate scheme
-  Let bindings body -> do
-    stDefs <- resolveDeclarationList bindings
-    env <- getEnv
-    (stBody, tyBody) <- withValues (envValues $ apply stDefs env) $ inferExpressionType' body
-    pure (stDefs `composeSubst` stBody, tyBody)
-  IfElse cond ifE elseE -> do
-    (_, condT) <- inferExpressionType' cond
-    unify condT TBool -- Check if condition is boolean
-    (ifSt, ifT) <- inferExpressionType' ifE
-    (elseSt, elseT) <- inferExpressionType' elseE
-    subst <- unify ifT elseT
-    let subst' = ifSt `Map.union` elseSt `Map.union` subst
-    pure (subst', apply subst' $ higherSp ifT elseT)
-  Ctor name ->
-    lookupConstructor name >>= \case
-      Just (Constructor ty _ []) -> pure (Map.empty, ty)
-      Just (Constructor ty _ (tp : tps)) -> pure (Map.empty, foldl' TLambda tp tps `TLambda` ty)
-      Nothing -> lift . throwErr $ UnboundConstructorError name
-  CaseOf expr items -> pure (Map.empty, TUnknown) -- TODO
+inferExpressionType expr = uncurry apply <$> infer expr
 
 -- | Check if type doesn't use kinds illegally
 verifyValidKind :: Type -> TI ()
@@ -194,7 +226,7 @@ resolveDeclaration st = \case
 
     -- Infer type using tmpEnv
     (stBinding, properTypeScheme) <- withValues (Map.singleton name tmpTypeScheme) $ do
-      (stBinding, tyBinding) <- inferExpressionType' expr
+      (stBinding, tyBinding) <- infer expr
       -- Check if previous definition (signature) matches inferred type
       unify typeDefn tyBinding
 
