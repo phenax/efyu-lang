@@ -93,7 +93,7 @@ generalize :: TypeEnv -> Type -> TypeScheme
 generalize env t = flip TypeScheme t . Set.toList $ freeTypeVars t `Set.difference` freeTypeVars env
 
 -- | Infer types of literals
-inferLiteralType :: Literal -> TI (TypeSubst, Type)
+inferLiteralType :: Literal Expression -> TI (TypeSubst, Type)
 inferLiteralType = \case
   LiteralInt _ -> pure (Map.empty, TInt)
   LiteralString _ -> pure (Map.empty, TString)
@@ -156,6 +156,7 @@ inferExpressionType' = \case
       Just (Constructor ty _ []) -> pure (Map.empty, ty)
       Just (Constructor ty _ (tp : tps)) -> pure (Map.empty, foldl' TLambda tp tps `TLambda` ty)
       Nothing -> lift . throwErr $ UnboundConstructorError name
+  CaseOf expr items -> pure (Map.empty, TUnknown) -- TODO
 
 -- | Check if type doesn't use kinds illegally
 verifyValidKind :: Type -> TI ()

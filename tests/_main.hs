@@ -4,6 +4,7 @@ import qualified CustomTypeTest
 import Efyu.Utils (debugM)
 import qualified ExprParserTest
 import qualified FuFilesTest
+import qualified PatternMatchingTest
 import Test.Hspec
 import qualified TypeTest
 
@@ -16,3 +17,4 @@ main = hspec $ do
   CustomTypeTest.tests
   FuFilesTest.tests
   CodegenTest.tests
+  PatternMatchingTest.tests

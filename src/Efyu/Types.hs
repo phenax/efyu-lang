@@ -8,13 +8,13 @@ data Block
   | TypeDef (IdentifierName 'TypeName) Type
   deriving (Show, Eq)
 
-data Literal
+data Literal e
   = LiteralString String
   | LiteralInt Integer
   | LiteralFloat Double
   | LiteralBool Bool
-  | LiteralList [Expression]
-  | LiteralTuple [Expression]
+  | LiteralList [e]
+  | LiteralTuple [e]
   deriving (Show, Eq)
 
 -- | Set of identifier types
@@ -32,17 +32,31 @@ data Definition
   | DefSignature (IdentifierName 'VarName) Type
   deriving (Show, Eq)
 
+data Pattern
+  = PatWildcard
+  | PatCtor (IdentifierName 'ConstructorName) [Pattern]
+  | PatVar (IdentifierName 'VarName)
+  | PatLiteral (Literal Pattern)
+  deriving (Show, Eq)
+
+defaultGuard = Literal . LiteralBool $ True
+
+type Guard = Expression
+
+data CaseItem = CaseItem Pattern Guard Expression
+  deriving (Show, Eq)
+
 data Expression
-  = Literal Literal
+  = Literal (Literal Expression)
   | Let [Definition] Expression
   | Var (IdentifierName 'VarName)
   | Apply Expression Expression
   | Lambda (IdentifierName 'VarName) Expression
   | IfElse Expression Expression Expression
   | Ctor (IdentifierName 'ConstructorName)
+  | CaseOf Expression [CaseItem]
   deriving (Show, Eq)
 
--- | Polymorphic set of vars (forall a, b, c. Type)
 data TypeScheme
   = TypeScheme [IdentifierName PolyTypeName] Type
   deriving (Show, Eq)

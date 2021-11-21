@@ -108,6 +108,7 @@ test-suite efyu-test
       CustomTypeTest
       ExprParserTest
       FuFilesTest
+      PatternMatchingTest
       TestHelpers
       TypeTest
       Efyu
