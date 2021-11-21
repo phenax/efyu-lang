@@ -30,9 +30,9 @@ data JsModuleItem
   deriving (Show, Eq)
 
 -- JsIfChain [(JsExpr, JsBlock)] (Maybe JsBlock)
+-- JsWhile JsExpr JsBlock
 data JsStatement
   = JsConstVar (IdentifierName 'VarName) JsExpr
-  | JsWhile JsExpr JsBlock
   | JsReturn JsExpr
   | JsIgnoreS
   deriving (Show, Eq)

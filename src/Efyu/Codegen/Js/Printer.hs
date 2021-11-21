@@ -46,7 +46,6 @@ printStatement :: JsStatement -> String
 printStatement (JsConstVar (IdentifierName name) val) = "const " ++ name ++ " = " ++ printExpression val ++ ";"
 printStatement (JsReturn val) = "return " ++ printExpression val
 printStatement JsIgnoreS = "<<ignored>>"
-printStatement _ = "<<pending>>"
 
 printExpression :: JsExpr -> String
 printExpression (JsVar name) = printIdent name

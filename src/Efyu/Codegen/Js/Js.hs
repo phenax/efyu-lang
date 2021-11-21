@@ -35,6 +35,7 @@ jsExpr (Apply fn p) = JsCall (jsExpr fn') $ map jsExpr params
   where
     (fn', params) = flattenApply fn p
 jsExpr (Var name) = JsVar name
+jsExpr (Ctor (IdentifierName name)) = JsVar (IdentifierName name)
 jsExpr (Literal lit) = case lit of
   LiteralString s -> JsLitString s
   LiteralInt n -> JsLitNumber (fromInteger n)
@@ -44,7 +45,6 @@ jsExpr (Literal lit) = case lit of
   LiteralTuple ls -> JsLitList . map jsExpr $ ls
 jsExpr (IfElse condE ifE elseE) =
   JsTernary (jsExpr condE) (jsExpr ifE) (jsExpr elseE)
-jsExpr _ = JsIgnoreE
 
 jsModule :: Module -> JsModule
 jsModule (Module name blocks) = JsModule name . map jsModuleItem $ blocks
