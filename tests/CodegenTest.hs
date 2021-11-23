@@ -3,10 +3,11 @@ module CodegenTest where
 import Efyu.Codegen.Js.Js
 import Efyu.Codegen.Js.Printer
 import Efyu.Types
-import Efyu.Utils (debugM, printStr)
+import Efyu.Utils (printStr)
 import Test.Hspec
 import TestHelpers
-import Text.RawString.QQ (r)
+
+-- import Text.RawString.QQ (r)
 
 tests = do
   describe "CodeGen > JS" $ do

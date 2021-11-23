@@ -5,41 +5,96 @@ import Data.List (foldl')
 import Efyu.Syntax.TypeAnnotations (typeAnnotationP)
 import Efyu.Syntax.Utils
 import Efyu.Types
+import Efyu.Utils (debugM)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
-literalP :: MParser Expression
-literalP = Literal <$> p
-  where
-    p = try tupleP <|> tryParens (try floatP <|> intP <|> stringP <|> try boolP <|> listP)
-    comma = L.symbol scnl ","
-    tryParens = try . withOptionalParens
+class Parsable a where
+  parser :: MParser () -> MParser a
 
-    floatP = LiteralFloat <$> float
-    intP = LiteralInt <$> integer
-    stringP = LiteralString <$> insideQuotes
-    boolP = LiteralBool . (== "True") <$> (symbol "True" <|> symbol "False")
-    tupleP =
-      LiteralTuple
-        <$> withLineFold
-          ( \sp -> do
-              x <- L.symbol sp "(" >> expressionP <* comma
-              xs <- (sp >> expressionP) `sepEndBy1` comma
-              L.symbol scnl ")"
-              pure $ x : xs
-          )
-    listP =
-      LiteralList
-        <$> withLineFold
-          ( \sp ->
-              L.symbol sp "["
-                >> ((sp >> expressionP) `sepEndBy` comma)
-                <* L.symbol scnl "]"
-          )
+instance (Parsable a) => Parsable (Literal a) where
+  parser _ = try tupleP <|> tryParens (try floatP <|> intP <|> stringP <|> try boolP <|> listP)
+    where
+      comma = L.symbol scnl ","
+      tryParens = try . withOptionalParens
+      floatP = LiteralFloat <$> float
+      intP = LiteralInt <$> integer
+      stringP = LiteralString <$> insideQuotes
+      boolP = LiteralBool . (== "True") <$> (symbol "True" <|> symbol "False")
+      tupleP =
+        LiteralTuple
+          <$> withLineFold
+            ( \sp -> do
+                x <- L.symbol sp "(" >> parser sp <* comma
+                xs <- (sp >> parser sp) `sepEndBy1` comma
+                L.symbol scnl ")"
+                pure $ x : xs
+            )
+      listP =
+        LiteralList
+          <$> withLineFold
+            ( \sp ->
+                L.symbol sp "["
+                  >> ((sp >> parser sp) `sepEndBy` comma)
+                  <* L.symbol scnl "]"
+            )
+
+instance Parsable Expression where
+  parser _ = scnl >> p <* scnl
+    where
+      p =
+        try literalExprP
+          <|> (try . parens) letBindingP
+          <|> (try . parens) ifThenElseP
+          <|> try applyP
+          <|> (try . parens) lambdaP
+          <|> (try . parens) varP
+          <|> (try . parens) caseOfP
+          <?> "<expr>"
+      parens = withOptionalParens
+
+instance Parsable (Arg Expression) where
+  parser sp = Arg <$> (literalExprP <|> varP <|> constructorP <|> withParens (parser sp))
+
+instance Parsable Pattern where
+  parser sp = try p
+    where
+      p =
+        (PatVar <$> varIdentifier)
+          <|> (PatWildcard <$ symbol "_")
+          <|> (PatLiteral <$> parser sp)
+          <|> patternCtorApplyP sp
+
+instance Parsable (Arg Pattern) where
+  parser sp = Arg <$> try p
+    where
+      p =
+        (PatVar <$> varIdentifier)
+          <|> (PatWildcard <$ symbol "_")
+          <|> (PatLiteral <$> parser sp)
+          <|> withParens (patternCtorApplyP sp)
+
+patternCtorApplyP sp = do
+  name <- constructorIdentifier
+  args <- argListP (parser sp :: MParser Pattern) sp
+  pure $ PatCtor name args
+
+argListP :: MParser e -> MParser () -> MParser [e]
+argListP argP sp = argListParser []
+  where
+    argListParser ls = do
+      optn <- optional . try $ sp >> argP
+      sc
+      case optn of
+        Nothing -> pure ls
+        Just p -> argListParser $ ls ++ [p]
 
 parameter :: MParser (IdentifierName 'VarName)
 parameter = varIdentifier
+
+literalExprP :: MParser Expression
+literalExprP = Literal <$> parser sc
 
 varP :: MParser Expression
 varP = Var <$> lexeme varIdentifier
@@ -53,7 +108,7 @@ definitionP = try defP <|> typeAnnotationP
     defP = withLineFold $ \sp -> do
       name <- varIdentifier <* sp
       params <- (parameter <* sp) `manyTill` char '='
-      body <- sp >> expressionP
+      body <- sp >> parser sp
       optional (char ';')
       pure $ DefValue name (foldr' Lambda body params)
 
@@ -72,16 +127,8 @@ lambdaP = withLineFold $ \sp -> do
 applyP :: MParser Expression
 applyP = withLineFold $ \sp -> do
   fn <- try varP <|> try constructorP <|> withParens expressionP
-  params <- argListParser sp []
-  pure $ foldl' Apply fn params
-  where
-    argListParser sp ls = do
-      let argP = sp >> (literalP <|> varP <|> constructorP <|> withParens expressionP)
-      optn <- optional . try $ argP
-      sc
-      case optn of
-        Nothing -> pure ls
-        Just p -> argListParser sp $ ls ++ [p]
+  params <- argListP (parser sp :: MParser (Arg Expression)) sp
+  pure . foldl' Apply fn . map argToExpr $ params
 
 ifThenElseP :: MParser Expression
 ifThenElseP = do
@@ -94,18 +141,18 @@ ifThenElseP = do
   elseE <- indentGt pos >> expressionP
   pure $ IfElse condE ifE elseE
 
-expressionP :: MParser Expression
-expressionP = scnl >> p <* scnl
+caseOfP :: MParser Expression
+caseOfP = withLineFold $ \sp -> do
+  expr <- L.symbol sp "case" >> expressionP <* L.symbol sp "of"
+  items <- some $ caseItemP sp
+  pure $ CaseOf expr items
   where
-    p =
-      try literalP
-        <|> (try . parens) letBindingP
-        <|> (try . parens) ifThenElseP
-        <|> try applyP
-        <|> (try . parens) lambdaP
-        <|> (try . parens) varP
-        <?> "<expr>"
-    parens = withOptionalParens
+    caseItemP sp = do
+      pattern <- parser sp <* sp <* L.symbol sp "->"
+      CaseItem pattern defaultGuard <$> expressionP
+
+expressionP :: MParser Expression
+expressionP = parser scnl
 
 --
 --

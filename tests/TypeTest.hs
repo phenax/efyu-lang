@@ -60,48 +60,48 @@ tests =
           check recursiveExpr (TInt `tlam` TString) `shouldReturn` Left (TypeUnificationError TString TInt)
 
     describe "Inference" $ do
-      let infer = runTI . inferExpressionType
+      let inferTy = runTI . inferExpressionType
 
       describe "literals" $ do
-        it "should infer literal types" $ do
-          infer (Literal $ LiteralInt 20) `shouldReturn` Right TInt
-          infer (Literal $ LiteralString "") `shouldReturn` Right TString
-          infer (Literal $ LiteralFloat 20.0) `shouldReturn` Right TFloat
-          infer (Literal $ LiteralBool True) `shouldReturn` Right TBool
+        it "should inferTy literal types" $ do
+          inferTy (Literal $ LiteralInt 20) `shouldReturn` Right TInt
+          inferTy (Literal $ LiteralString "") `shouldReturn` Right TString
+          inferTy (Literal $ LiteralFloat 20.0) `shouldReturn` Right TFloat
+          inferTy (Literal $ LiteralBool True) `shouldReturn` Right TBool
         it "should infer list literals" $ do
-          infer (Literal $ LiteralList [int 5]) `shouldReturn` Right (TList TInt)
-          infer (Literal $ LiteralList [float 5.0, float 5.0]) `shouldReturn` Right (TList TFloat)
-          infer (Literal $ LiteralList [int 5, str "wow"])
+          inferTy (Literal $ LiteralList [int 5]) `shouldReturn` Right (TList TInt)
+          inferTy (Literal $ LiteralList [float 5.0, float 5.0]) `shouldReturn` Right (TList TFloat)
+          inferTy (Literal $ LiteralList [int 5, str "wow"])
             `shouldReturn` Left (TypeUnificationError TInt TString)
-          infer (Literal $ LiteralList [str "wow", float 3.0])
+          inferTy (Literal $ LiteralList [str "wow", float 3.0])
             `shouldReturn` Left (TypeUnificationError TString TFloat)
         it "should infer tuple literals" $ do
-          infer (Literal $ LiteralTuple []) `shouldReturn` Right TUnknown
-          infer (Literal $ LiteralTuple [int 5]) `shouldReturn` Right (TTuple [TInt])
-          infer (Literal $ LiteralTuple [float 5.0, float 5.0]) `shouldReturn` Right (TTuple [TFloat, TFloat])
-          infer (Literal $ LiteralTuple [int 5, float 5.0]) `shouldReturn` Right (TTuple [TInt, TFloat])
-          infer (Literal $ LiteralTuple [int 5, str "wow", float 5.0])
+          inferTy (Literal $ LiteralTuple []) `shouldReturn` Right TUnknown
+          inferTy (Literal $ LiteralTuple [int 5]) `shouldReturn` Right (TTuple [TInt])
+          inferTy (Literal $ LiteralTuple [float 5.0, float 5.0]) `shouldReturn` Right (TTuple [TFloat, TFloat])
+          inferTy (Literal $ LiteralTuple [int 5, float 5.0]) `shouldReturn` Right (TTuple [TInt, TFloat])
+          inferTy (Literal $ LiteralTuple [int 5, str "wow", float 5.0])
             `shouldReturn` Right (TTuple [TInt, TString, TFloat])
 
       describe "functions" $ do
         it "should infer lambda types" $ do
-          infer ("x" *->> Literal (LiteralFloat 0.0))
+          inferTy ("x" *->> Literal (LiteralFloat 0.0))
             `shouldReturn` Right (TLambda (tvar "'a0") TFloat)
-          infer ("x" *->> "y" *->> Literal (LiteralFloat 0.0))
+          inferTy ("x" *->> "y" *->> Literal (LiteralFloat 0.0))
             `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a1" `tlam` TFloat)
-          infer ("x" *->> "y" *->> var "y")
+          inferTy ("x" *->> "y" *->> var "y")
             `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a1" `tlam` tvar "'a1")
-          infer ("x" *->> "y" *->> var "x")
+          inferTy ("x" *->> "y" *->> var "x")
             `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a1" `tlam` tvar "'a0")
 
         it "should infer function application" $ do
-          infer (("x" *->> Literal (LiteralInt 3)) `call` Literal (LiteralFloat 0.0))
+          inferTy (("x" *->> Literal (LiteralInt 3)) `call` Literal (LiteralFloat 0.0))
             `shouldReturn` Right TInt
-          infer (("x" *->> var "x") `call` Literal (LiteralFloat 0.0))
+          inferTy (("x" *->> var "x") `call` Literal (LiteralFloat 0.0))
             `shouldReturn` Right TFloat
-          infer (("x" *->> "y" *->> var "y") `call` Literal (LiteralFloat 0.0))
+          inferTy (("x" *->> "y" *->> var "y") `call` Literal (LiteralFloat 0.0))
             `shouldReturn` Right (TLambda (tvar "'a2") (tvar "'a2"))
-          infer
+          inferTy
             ( Let
                 [ defVal "x" (Literal . LiteralInt $ 200),
                   defVal "id" ("x" *->> var "x")
@@ -109,16 +109,16 @@ tests =
                 (var "id" `call` var "x")
             )
             `shouldReturn` Right TInt
-          infer ("fn" *->> "x" *->> var "fn" `call` var "x")
+          inferTy ("fn" *->> "x" *->> var "fn" `call` var "x")
             `shouldReturn` Right ((tvar "'a1" `tlam` tvar "'a2") `tlam` tvar "'a1" `tlam` tvar "'a2")
         it "should fail for polymorphic usage of lambda parameters" $ do
-          infer
+          inferTy
             ("fn" *->> "pair" *->> var "pair" `call` (var "fn" `call` str "val") `call` (var "fn" `call` int 5))
             `shouldReturn` Left (TypeUnificationError TString TInt)
-          infer
+          inferTy
             ("fn" *->> tuple [var "fn" `call` str "val", var "fn" `call` int 5])
             `shouldReturn` Left (TypeUnificationError TString TInt)
-          infer
+          inferTy
             ("fn" *->> list [var "fn" `call` str "val", var "fn" `call` int 5])
             `shouldReturn` Left (TypeUnificationError TString TInt)
 
@@ -137,23 +137,23 @@ tests =
       --                     (int 1)
       --             ]
       --             (var "fact")
-      --     infer recursiveExpr `shouldReturn` Right TInt
+      --     inferTy recursiveExpr `shouldReturn` Right TInt
 
       describe "ifElse conditions" $ do
-        it "should infer types for if-else" $ do
-          infer (IfElse (bool True) (int 5) (int 6)) `shouldReturn` Right TInt
-          infer (IfElse (bool True) (float 5) (float 6)) `shouldReturn` Right TFloat
+        it "should inferTy types for if-else" $ do
+          inferTy (IfElse (bool True) (int 5) (int 6)) `shouldReturn` Right TInt
+          inferTy (IfElse (bool True) (float 5) (float 6)) `shouldReturn` Right TFloat
 
       it "should error out for invalid variables" $ do
-        infer (var "foobar")
+        inferTy (var "foobar")
           `shouldReturn` Left (UnboundVariableError . IdentifierName $ "foobar")
-        infer ("x" *->> var "x1")
+        inferTy ("x" *->> var "x1")
           `shouldReturn` Left (UnboundVariableError . IdentifierName $ "x1")
 
       it "should infer types from let bindings" $ do
-        infer (Let [defVal "x" (Literal . LiteralInt $ 200)] (var "x"))
+        inferTy (Let [defVal "x" (Literal . LiteralInt $ 200)] (var "x"))
           `shouldReturn` Right TInt
-        infer
+        inferTy
           ( Let
               [ defVal "x" (Literal . LiteralInt $ 200),
                 defVal "id" ("x" *->> var "x")
@@ -164,7 +164,7 @@ tests =
 
       describe "type signature" $ do
         it "should verify type signatures match inferred types" $ do
-          infer
+          inferTy
             ( Let
                 [ defSig "id" $ TInt `tlam` TInt,
                   defVal "id" ("x" *->> var "x")
@@ -172,7 +172,7 @@ tests =
                 (var "id")
             )
             `shouldReturn` Right (TInt `tlam` TInt)
-          infer
+          inferTy
             ( Let
                 [ defVal "id" ("x" *->> var "x"),
                   defSig "id" $ TInt `tlam` TInt
@@ -180,7 +180,7 @@ tests =
                 (var "id")
             )
             `shouldReturn` Right (TInt `tlam` TInt)
-          infer
+          inferTy
             ( Let
                 [ defSig "tup" $ TTuple [TInt, TString],
                   defVal "tup" (tuple [int 1, float 3.0])
@@ -188,7 +188,7 @@ tests =
                 (var "tup")
             )
             `shouldReturn` Left (TypeUnificationError TString TFloat)
-          infer
+          inferTy
             ( Let
                 [ defSig "tup" $ TTuple [TInt, TFloat, TString],
                   defVal "tup" (tuple [int 1, float 3.0])
@@ -196,7 +196,7 @@ tests =
                 (var "tup")
             )
             `shouldReturn` Left (TypeUnificationError (TTuple [TInt, TFloat, TString]) (TTuple [TInt, TFloat]))
-          infer
+          inferTy
             ( Let
                 [ defSig "tup" $ TTuple [TInt, TFloat, TString],
                   defVal "tup" (tuple [int 1, float 3.0, str "x"])
@@ -205,7 +205,7 @@ tests =
             )
             `shouldReturn` Right (TTuple [TInt, TFloat, TString])
         it "should error out if type signature doesn't match inferred type" $ do
-          infer
+          inferTy
             ( Let
                 [ defVal "id" ("x" *->> var "x"),
                   defSig "id" $ TInt `tlam` TString

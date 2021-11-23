@@ -47,7 +47,7 @@ float = fl <|> L.signed sc fl
       pure . read $ n ++ "." ++ dec
 
 reservedKeywords :: [String]
-reservedKeywords = ["let", "in", "if", "then", "else", "type", "alias"]
+reservedKeywords = ["let", "in", "if", "then", "else", "type", "alias", "case", "of"]
 
 varIdentifier :: MParser (IdentifierName 'VarName)
 varIdentifier = IdentifierName <$> lowerIdentifier

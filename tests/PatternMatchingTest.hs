@@ -1,18 +1,53 @@
 module PatternMatchingTest where
 
+import Efyu.Syntax.Expression
 import Efyu.TypeChecker.Env
 import Efyu.TypeChecker.Infer
 import Efyu.Types
 import Test.Hspec
+import Test.Hspec.Megaparsec
 import TestHelpers
+import qualified Text.Megaparsec as MP
+import Text.RawString.QQ (r)
 
 tests = do
   let inferTyExpr = runTI . inferExpressionType
   let getValType name m = runTI $ do
         checkModuleWithEnv m
         lookupValue (ident name) >>= \case
-          Just r -> instantiate r
+          Just r' -> instantiate r'
           Nothing -> pure TUnknown
+  let p = MP.parse (expressionP <* MP.eof) "testfile.fu"
+
+  describe "Pattern matching > parsing" $ do
+    it "should parse out case of syntax with simple patterns" $ do
+      p
+        [r|
+          case x of
+            2 -> "its 2"
+            "wow" -> "wow"
+            x -> fn x
+            _ -> "some other shit"
+        |]
+        `shouldParse` CaseOf
+          (var "x")
+          [ CaseItem (PatLiteral $ LiteralInt 2) defaultGuard (str "its 2"),
+            CaseItem (PatLiteral $ LiteralString "wow") defaultGuard (str "wow"),
+            CaseItem (PatVar (ident "x")) defaultGuard (var "fn" `call` var "x"),
+            CaseItem PatWildcard defaultGuard (str "some other shit")
+          ]
+    it "should parse out case of for tuple and list patterns" $ do
+      p
+        [r|
+             case x of
+               (2, x) -> x
+               _ -> 20
+           |]
+        `shouldParse` CaseOf
+          (var "x")
+          [ CaseItem (pattuple [patint 2, patvar "x"]) defaultGuard (var "x"),
+            CaseItem PatWildcard defaultGuard (int 20)
+          ]
 
   describe "Pattern matching > type inference" $ do
     it "should infer lambda type correctly" $ do

@@ -57,6 +57,8 @@ data Expression
   | CaseOf Expression [CaseItem]
   deriving (Show, Eq)
 
+newtype Arg e = Arg {argToExpr :: e}
+
 data TypeScheme
   = TypeScheme [IdentifierName PolyTypeName] Type
   deriving (Show, Eq)

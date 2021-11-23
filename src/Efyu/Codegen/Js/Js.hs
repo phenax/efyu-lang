@@ -45,6 +45,7 @@ jsExpr (Literal lit) = case lit of
   LiteralTuple ls -> JsLitList . map jsExpr $ ls
 jsExpr (IfElse condE ifE elseE) =
   JsTernary (jsExpr condE) (jsExpr ifE) (jsExpr elseE)
+jsExpr _ = JsIgnoreE
 
 jsModule :: Module -> JsModule
 jsModule (Module name blocks) = JsModule name . map jsModuleItem $ blocks

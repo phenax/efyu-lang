@@ -1,6 +1,5 @@
 module TestHelpers where
 
-import Efyu.Syntax.Block
 import Efyu.Types
 
 ident = IdentifierName
@@ -27,7 +26,21 @@ tuple = Literal . LiteralTuple
 
 list = Literal . LiteralList
 
+patint = PatLiteral . LiteralInt
+
+patstr = PatLiteral . LiteralString
+
+patfloat = PatLiteral . LiteralFloat
+
+patbool = PatLiteral . LiteralBool
+
+pattuple = PatLiteral . LiteralTuple
+
+patlist = PatLiteral . LiteralList
+
 var = Var . ident
+
+patvar = PatVar . ident
 
 tvar = TVar . ident
 
