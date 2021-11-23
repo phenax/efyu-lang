@@ -68,6 +68,27 @@ tests = do
             CaseItem (pattuple [patctor "Just" [patvar "x"], patctor "Right" [patvar "y"]]) Nothing (var "x"),
             CaseItem PatWildcard Nothing (int 20)
           ]
+    it "caseof nested inside let" $ do
+      p
+        [r|
+          let
+            res = 
+              case ls of
+                [] -> []
+                ls -> xs
+            xs = 1
+          in res
+        |]
+        `shouldParse` Let
+          [ defVal "res" $
+              CaseOf
+                (var "ls")
+                [ CaseItem (patlist []) Nothing $ list [],
+                  CaseItem (patvar "ls") Nothing $ var "xs"
+                ],
+            defVal "xs" $ int 1
+          ]
+          (var "res")
 
   describe "Pattern matching > type inference" $ do
     it "should infer lambda type correctly" $ do

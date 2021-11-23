@@ -135,13 +135,14 @@ ifThenElseP = do
 caseOfP :: MParser Expression
 caseOfP = withLineFold $ \sp -> do
   expr <- L.symbol sp "case" >> expressionP <* L.symbol sp "of"
-  items <- some $ caseItemP sp
+  items <- some $ sp >> caseItemP sp
   pure $ CaseOf expr items
   where
     caseItemP sp = do
       pattern <- parser sp <* sp <* L.symbol sp "->"
+      body <- parser sp
       -- TODO: Parse guard
-      CaseItem pattern Nothing <$> expressionP
+      pure $ CaseItem pattern Nothing body
 
 expressionP :: MParser Expression
 expressionP = parser scnl
