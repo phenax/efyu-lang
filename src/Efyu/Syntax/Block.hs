@@ -1,38 +1,37 @@
 module Efyu.Syntax.Block where
 
 import Data.Foldable (foldr')
-import Efyu.Syntax.Expression
+import Efyu.Syntax.Expression ()
 import Efyu.Syntax.TypeAnnotations
 import Efyu.Syntax.Utils
 import Efyu.Types
 import Text.Megaparsec
 import qualified Text.Megaparsec.Char.Lexer as L
 
-defineFnP :: MParser Block
-defineFnP = Def <$> definitionP
+instance Parsable [Block] where
+  parser sp = nonIndented $ (nonIndented p `sepBy` sp) <* sp
+    where
+      p = (dataDeclrP <* sp) <|> (typeAliasP <* sp) <|> try (defineFnP <* sp) <?> "<declaration>"
 
-dataDeclrP :: MParser Block
-dataDeclrP = withLineFold $ \sp -> do
-  L.symbol sp "data"
-  name <- typeIdentifier <* sp
-  args <- many (polyTypeIdentifier <* sp)
-  ty <- L.symbol sp "=" >> tSumTypeP sp
-  let tyScoped = foldr' TScope ty args
-  pure $ TypeDef name tyScoped
+      defineFnP = Def <$> parser scnl
 
-typeAliasP :: MParser Block
-typeAliasP = withLineFold $ \sp -> do
-  L.symbol sp "type"
-  name <- typeIdentifier <* sp
-  args <- many (polyTypeIdentifier <* sp)
-  ty <- L.symbol sp "=" >> typeP sp
-  let tyScoped = foldr' TScope ty args
-  pure $ TypeDef name tyScoped
+      dataDeclrP :: MParser Block
+      dataDeclrP = withLineFold $ \sp' -> do
+        L.symbol sp' "data"
+        name <- typeIdentifier <* sp'
+        args <- many (polyTypeIdentifier <* sp')
+        ty <- L.symbol sp' "=" >> tSumTypeP sp'
+        let tyScoped = foldr' TScope ty args
+        pure $ TypeDef name tyScoped
 
-blockDeclrP :: (MParser Block -> MParser Block) -> MParser [Block]
-blockDeclrP pre = (pre p `sepBy` scnl) <* scnl
-  where
-    p = (dataDeclrP <* scnl) <|> (typeAliasP <* scnl) <|> try (defineFnP <* scnl) <?> "<declaration>"
+      typeAliasP :: MParser Block
+      typeAliasP = withLineFold $ \sp' -> do
+        L.symbol sp' "type"
+        name <- typeIdentifier <* sp'
+        args <- many (polyTypeIdentifier <* sp')
+        ty <- L.symbol sp' "=" >> parser sp'
+        let tyScoped = foldr' TScope ty args
+        pure $ TypeDef name tyScoped
 
 moduleP :: String -> MParser Module
-moduleP name = Module name <$> blockDeclrP nonIndented
+moduleP name = Module name <$> parser scnl

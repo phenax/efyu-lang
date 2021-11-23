@@ -6,16 +6,23 @@ import Efyu.Types
 import Text.Megaparsec
 import qualified Text.Megaparsec.Char.Lexer as L
 
+instance Parsable Type where
+  parser sp = try (tLambdaP sp) <|> try (tApplyP sp) <?> "<type>"
+
+instance Parsable (Arg Type) where
+  parser sp = Arg <$> (tNameP <|> try (tAtomP sp) <?> "<fuckkk>")
+
 tListP :: MParser () -> MParser Type
 tListP sp = TList <$> p
   where
-    p = L.symbol sc "[" >> typeP sp <* sc <* L.symbol sc "]"
+    p = L.symbol sc "[" >> parser sp <* sc <* L.symbol sc "]"
 
 tTupleP :: MParser () -> MParser Type
 tTupleP sp = TTuple <$> p
   where
-    p = L.symbol sc "(" >> (typeP sp `sepBy1` L.symbol sp ",") <* sc <* L.symbol sc ")"
+    p = L.symbol sc "(" >> (parser sp `sepBy1` L.symbol sp ",") <* sc <* L.symbol sc ")"
 
+tNameP :: MParser Type
 tNameP = do
   name <- typeIdentifier
   pure $ case name of
@@ -25,12 +32,13 @@ tNameP = do
     IdentifierName "Bool" -> TBool
     n -> TName n
 
+tVarP :: MParser Type
 tVarP = TVar <$> polyTypeIdentifier
 
 tConstructorP :: MParser () -> MParser Constructor
 tConstructorP sp = do
   name <- constructorIdentifier
-  params <- try $ tTypeArgsP sp
+  params <- map argToExpr <$> argListP (parser sp :: MParser (Arg Type)) sp
   pure $ Constructor TUnknown name params
 
 tSumTypeP :: MParser () -> MParser Type
@@ -38,22 +46,10 @@ tSumTypeP sp = do
   optional $ L.symbol sp "|"
   TCtors <$> ((tConstructorP sp <* scnl) `sepBy1` L.symbol sp "|")
 
-tTypeArgsP :: MParser () -> MParser [Type]
-tTypeArgsP sp = do
-  try $ argListParser []
-  where
-    argListParser ls = do
-      let argP = sp >> (tNameP <|> try (tAtomP sp) <?> "<fuckkk>")
-      optn <- optional . try $ argP
-      sc
-      case optn of
-        Nothing -> pure ls
-        Just p -> argListParser $ ls ++ [p]
-
 tApplyP :: MParser () -> MParser Type
 tApplyP sp = do
   name <- tNameP
-  params <- try $ tTypeArgsP sp
+  params <- map argToExpr <$> argListP (parser sp :: MParser (Arg Type)) sp
   pure $ foldl' TApply name params
 
 tAtomP :: MParser () -> MParser Type
@@ -71,19 +67,6 @@ tAtomP sp =
 tLambdaP :: MParser () -> MParser Type
 tLambdaP sp = do
   tys <- (sp >> tAtomP sp <* sc) `sepBy1` L.symbol sp "->"
-  pure $ mergety tys
-  where
-    mergety [] = undefined -- NOTE: Can't happen since sepBy1 guarentees nonempty
-    mergety [ty] = ty
-    mergety (ty : tys) = TLambda ty $ mergety tys
-
-typeP :: MParser () -> MParser Type
-typeP sp = try (tLambdaP sp) <|> try (tApplyP sp) <?> "<type>"
-
-typeAnnotationP :: MParser Definition
-typeAnnotationP = withLineFold $ \sp -> do
-  name <- varIdentifier <* sp
-  L.symbol sp ":"
-  DefSignature name <$> typeP sp <* scnl
+  pure $ foldr1 TLambda tys
 
 --

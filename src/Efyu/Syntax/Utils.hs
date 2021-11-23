@@ -9,6 +9,9 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
+class Parsable a where
+  parser :: MParser () -> MParser a
+
 withOptionalParens :: MParser a -> MParser a
 withOptionalParens comb =
   withParens (lexeme comb) <|> comb
@@ -98,5 +101,15 @@ indentGt (pos, sp) =
 indentGtEq :: (Pos, MParser ()) -> MParser ()
 indentGtEq p@(pos, sp) =
   try (indentGt p) <|> (L.indentGuard scnl EQ pos >> sp)
+
+argListP :: MParser e -> MParser () -> MParser [e]
+argListP argP sp = argListParser []
+  where
+    argListParser ls = do
+      optn <- optional . try $ sp >> argP
+      sc
+      case optn of
+        Nothing -> pure ls
+        Just p -> argListParser $ ls ++ [p]
 
 ---

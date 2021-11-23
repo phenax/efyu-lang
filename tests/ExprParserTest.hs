@@ -1,7 +1,7 @@
 module ExprParserTest where
 
 import Efyu.Syntax.Expression
-import Efyu.Syntax.TypeAnnotations (typeAnnotationP)
+import Efyu.Syntax.Utils (MParser, parser, scnl)
 import Efyu.Types
 import Test.Hspec
 import Test.Hspec.Megaparsec
@@ -393,8 +393,8 @@ tests = do
           ]
           (var "foo" `call` int 5)
 
-  describe "typeAnnotationP > type annotations" $ do
-    let tp = MP.parse (typeAnnotationP <* eof) "type.fu"
+  describe "definition > type annotations" $ do
+    let tp = MP.parse ((parser scnl :: MParser Definition) <* eof) "type.fu"
     it "should parse primitive types" $ do
       tp [r|name : String |] `shouldParse` defSig "name" TString
       tp [r|name : Int |] `shouldParse` defSig "name" TInt

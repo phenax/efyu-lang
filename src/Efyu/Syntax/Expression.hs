@@ -2,15 +2,12 @@ module Efyu.Syntax.Expression where
 
 import Data.Foldable (Foldable (foldr'))
 import Data.List (foldl')
-import Efyu.Syntax.TypeAnnotations (typeAnnotationP)
+import Efyu.Syntax.TypeAnnotations ()
 import Efyu.Syntax.Utils
 import Efyu.Types
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-
-class Parsable a where
-  parser :: MParser () -> MParser a
 
 instance (Parsable a) => Parsable (Literal a) where
   parser _ = try tupleP <|> tryParens (try floatP <|> intP <|> stringP <|> try boolP <|> listP)
@@ -75,20 +72,24 @@ instance Parsable (Arg Pattern) where
           <|> (flip PatCtor [] <$> constructorIdentifier)
           <|> withParens (patternCtorApplyP sp)
 
+instance Parsable Definition where
+  parser _ = try defP <|> typeAnnotationP
+    where
+      typeAnnotationP = withLineFold $ \sp -> do
+        name <- varIdentifier <* sp
+        L.symbol sp ":"
+        DefSignature name <$> parser sp <* scnl
+      defP = withLineFold $ \sp -> do
+        name <- varIdentifier <* sp
+        params <- (parameter <* sp) `manyTill` char '='
+        body <- sp >> parser sp
+        optional (char ';')
+        pure $ DefValue name (foldr' Lambda body params)
+
 patternCtorApplyP sp = do
   name <- constructorIdentifier
   args <- argListP (parser sp :: MParser (Arg Pattern)) sp
   pure . PatCtor name . map argToExpr $ args
-
-argListP :: MParser e -> MParser () -> MParser [e]
-argListP argP sp = argListParser []
-  where
-    argListParser ls = do
-      optn <- optional . try $ sp >> argP
-      sc
-      case optn of
-        Nothing -> pure ls
-        Just p -> argListParser $ ls ++ [p]
 
 parameter :: MParser (IdentifierName 'VarName)
 parameter = varIdentifier
@@ -102,21 +103,11 @@ varP = Var <$> lexeme varIdentifier
 constructorP :: MParser Expression
 constructorP = Ctor <$> lexeme constructorIdentifier
 
-definitionP :: MParser Definition
-definitionP = try defP <|> typeAnnotationP
-  where
-    defP = withLineFold $ \sp -> do
-      name <- varIdentifier <* sp
-      params <- (parameter <* sp) `manyTill` char '='
-      body <- sp >> parser sp
-      optional (char ';')
-      pure $ DefValue name (foldr' Lambda body params)
-
 letBindingP :: MParser Expression
 letBindingP = do
   pos <- indentLevel
   symbol "let"
-  vars <- (indentGt pos >> definitionP <* scnl) `someTill` (indentGtEq pos >> symbol "in")
+  vars <- (indentGt pos >> parser scnl <* scnl) `someTill` (indentGtEq pos >> symbol "in")
   Let vars <$> (indentGt pos >> expressionP)
 
 lambdaP :: MParser Expression
