@@ -36,10 +36,9 @@ mapList fn ls =
     x = fuckMaybe (head ls)
     xs = tail ls
   in
-    if null? ls then
-      []
-    else
-      prepend (fn x) xs
+    case ls of
+      [] -> []
+      ls -> prepend (fn x) xs
 
 myList : [Int]
 myList = [1,2,3,4,5,6]
@@ -59,7 +58,11 @@ fibo n =
 n = 5
 
 myMaybeVal = Just 20
-getItOut = fuckMaybe myMaybeVal
+
+getItOut =
+  case myMaybeVal of
+    Just x -> x
+    Nothing -> 0
 
 main =
   let
