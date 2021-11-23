@@ -31,10 +31,10 @@ tests = do
         |]
         `shouldParse` CaseOf
           (var "x")
-          [ CaseItem (PatLiteral $ LiteralInt 2) defaultGuard (str "its 2"),
-            CaseItem (PatLiteral $ LiteralString "wow") defaultGuard (str "wow"),
-            CaseItem (PatVar (ident "x")) defaultGuard (var "fn" `call` var "x"),
-            CaseItem PatWildcard defaultGuard (str "some other shit")
+          [ CaseItem (PatLiteral $ LiteralInt 2) Nothing (str "its 2"),
+            CaseItem (PatLiteral $ LiteralString "wow") Nothing (str "wow"),
+            CaseItem (PatVar (ident "x")) Nothing (var "fn" `call` var "x"),
+            CaseItem PatWildcard Nothing (str "some other shit")
           ]
     it "should parse out case of for tuple and list patterns" $ do
       p
@@ -46,9 +46,9 @@ tests = do
            |]
         `shouldParse` CaseOf
           (var "x")
-          [ CaseItem (pattuple [patint 2, patvar "x"]) defaultGuard (var "x"),
-            CaseItem (patlist [patint 1, patint 2, patvar "x"]) defaultGuard (var "x"),
-            CaseItem PatWildcard defaultGuard (int 20)
+          [ CaseItem (pattuple [patint 2, patvar "x"]) Nothing (var "x"),
+            CaseItem (patlist [patint 1, patint 2, patvar "x"]) Nothing (var "x"),
+            CaseItem PatWildcard Nothing (int 20)
           ]
     it "should parse out constructor patterns and nestings" $ do
       p
@@ -62,11 +62,11 @@ tests = do
            |]
         `shouldParse` CaseOf
           (var "x")
-          [ CaseItem (patctor "Just" [patvar "x"]) defaultGuard (var "x"),
-            CaseItem (patctor "Just" [patctor "Just" [patvar "x"]]) defaultGuard (var "x"),
-            CaseItem (patctor "Just" [pattuple [patvar "x", patint 3]]) defaultGuard (var "x"),
-            CaseItem (pattuple [patctor "Just" [patvar "x"], patctor "Right" [patvar "y"]]) defaultGuard (var "x"),
-            CaseItem PatWildcard defaultGuard (int 20)
+          [ CaseItem (patctor "Just" [patvar "x"]) Nothing (var "x"),
+            CaseItem (patctor "Just" [patctor "Just" [patvar "x"]]) Nothing (var "x"),
+            CaseItem (patctor "Just" [pattuple [patvar "x", patint 3]]) Nothing (var "x"),
+            CaseItem (pattuple [patctor "Just" [patvar "x"], patctor "Right" [patvar "y"]]) Nothing (var "x"),
+            CaseItem PatWildcard Nothing (int 20)
           ]
 
   describe "Pattern matching > type inference" $ do
@@ -75,8 +75,8 @@ tests = do
         ( "x"
             *->> CaseOf
               (var "x")
-              [ CaseItem (PatLiteral $ LiteralInt 5) defaultGuard (str "somethin"),
-                CaseItem PatWildcard defaultGuard (str "none")
+              [ CaseItem (PatLiteral $ LiteralInt 5) Nothing (str "somethin"),
+                CaseItem PatWildcard Nothing (str "none")
               ]
         )
         `shouldReturn` Right (TInt `tlam` TString)
@@ -87,7 +87,7 @@ tests = do
             "x"
               *->> CaseOf
                 (var "x")
-                [ CaseItem PatWildcard (var "gt0" `call` var "x") (str "somethin")
+                [ CaseItem PatWildcard (Just $ var "gt0" `call` var "x") (str "somethin")
                 ]
         )
         `shouldReturn` Right (TInt `tlam` TString)
@@ -96,7 +96,7 @@ tests = do
             "x"
               *->> CaseOf
                 (var "x")
-                [ CaseItem (PatVar $ ident "x1") (var "gt0" `call` var "x1") (var "x1")
+                [ CaseItem (PatVar $ ident "x1") (Just $ var "gt0" `call` var "x1") (var "x1")
                 ]
         )
         `shouldReturn` Right (TInt `tlam` TInt)
@@ -106,7 +106,7 @@ tests = do
         ( "x"
             *->> CaseOf
               (var "x")
-              [ CaseItem (PatVar (ident "ret")) defaultGuard (var "ret")
+              [ CaseItem (PatVar (ident "ret")) Nothing (var "ret")
               ]
         )
         `shouldReturn` Right (tvar "'a0" `tlam` tvar "'a0")
@@ -118,7 +118,7 @@ tests = do
               (var "x")
               [ CaseItem
                   (PatLiteral $ LiteralTuple [PatLiteral $ LiteralInt 5, PatVar $ ident "ret"])
-                  defaultGuard
+                  Nothing
                   (var "ret")
               ]
         )
@@ -136,7 +136,7 @@ tests = do
                     (var "x")
                     [ CaseItem
                         (PatCtor (ident "Pair") [PatLiteral $ LiteralInt 5, PatVar $ ident "y"])
-                        defaultGuard
+                        Nothing
                         (var "y")
                     ]
             ]

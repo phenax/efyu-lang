@@ -149,7 +149,8 @@ caseOfP = withLineFold $ \sp -> do
   where
     caseItemP sp = do
       pattern <- parser sp <* sp <* L.symbol sp "->"
-      CaseItem pattern defaultGuard <$> expressionP
+      -- TODO: Parse guard
+      CaseItem pattern Nothing <$> expressionP
 
 expressionP :: MParser Expression
 expressionP = parser scnl

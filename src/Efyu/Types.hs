@@ -39,9 +39,7 @@ data Pattern
   | PatLiteral (Literal Pattern)
   deriving (Show, Eq)
 
-defaultGuard = Literal . LiteralBool $ True
-
-type Guard = Expression
+type Guard = Maybe Expression
 
 data CaseItem = CaseItem Pattern Guard Expression
   deriving (Show, Eq)

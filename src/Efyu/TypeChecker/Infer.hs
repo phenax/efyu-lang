@@ -176,6 +176,13 @@ instance TypeInference Expression where
         let subst = stp `composeSubst` stg `composeSubst` ste
         pure (subst, apply subst typ, apply subst tye)
 
+instance TypeInference Guard where
+  infer Nothing = pure (Map.empty, TBool)
+  infer (Just g) = do
+    (st, ty) <- infer g
+    unify ty TBool
+    pure (st, ty)
+
 instance TypeInference Pattern where
   infer = \case
     PatLiteral lit -> infer lit
