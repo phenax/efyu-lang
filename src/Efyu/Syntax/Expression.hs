@@ -5,7 +5,6 @@ import Data.List (foldl')
 import Efyu.Syntax.TypeAnnotations (typeAnnotationP)
 import Efyu.Syntax.Utils
 import Efyu.Types
-import Efyu.Utils (debugM)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -73,12 +72,13 @@ instance Parsable (Arg Pattern) where
         (PatVar <$> varIdentifier)
           <|> (PatWildcard <$ symbol "_")
           <|> (PatLiteral <$> parser sp)
+          <|> (flip PatCtor [] <$> constructorIdentifier)
           <|> withParens (patternCtorApplyP sp)
 
 patternCtorApplyP sp = do
   name <- constructorIdentifier
-  args <- argListP (parser sp :: MParser Pattern) sp
-  pure $ PatCtor name args
+  args <- argListP (parser sp :: MParser (Arg Pattern)) sp
+  pure . PatCtor name . map argToExpr $ args
 
 argListP :: MParser e -> MParser () -> MParser [e]
 argListP argP sp = argListParser []

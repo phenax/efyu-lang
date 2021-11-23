@@ -41,11 +41,31 @@ tests = do
         [r|
              case x of
                (2, x) -> x
+               [1, 2, x] -> x
                _ -> 20
            |]
         `shouldParse` CaseOf
           (var "x")
           [ CaseItem (pattuple [patint 2, patvar "x"]) defaultGuard (var "x"),
+            CaseItem (patlist [patint 1, patint 2, patvar "x"]) defaultGuard (var "x"),
+            CaseItem PatWildcard defaultGuard (int 20)
+          ]
+    it "should parse out constructor patterns and nestings" $ do
+      p
+        [r|
+             case x of
+               Just x -> x
+               Just (Just x) -> x
+               Just (x, 3) -> x
+               (Just x, Right y) -> x
+               _ -> 20
+           |]
+        `shouldParse` CaseOf
+          (var "x")
+          [ CaseItem (patctor "Just" [patvar "x"]) defaultGuard (var "x"),
+            CaseItem (patctor "Just" [patctor "Just" [patvar "x"]]) defaultGuard (var "x"),
+            CaseItem (patctor "Just" [pattuple [patvar "x", patint 3]]) defaultGuard (var "x"),
+            CaseItem (pattuple [patctor "Just" [patvar "x"], patctor "Right" [patvar "y"]]) defaultGuard (var "x"),
             CaseItem PatWildcard defaultGuard (int 20)
           ]
 

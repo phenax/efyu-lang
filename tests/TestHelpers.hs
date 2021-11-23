@@ -38,6 +38,8 @@ pattuple = PatLiteral . LiteralTuple
 
 patlist = PatLiteral . LiteralList
 
+patctor = PatCtor . ident
+
 var = Var . ident
 
 patvar = PatVar . ident
