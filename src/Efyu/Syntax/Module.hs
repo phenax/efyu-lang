@@ -1,4 +1,4 @@
-module Efyu.Syntax.Block where
+module Efyu.Syntax.Module where
 
 import Data.Foldable (foldr')
 import Efyu.Syntax.Expression ()

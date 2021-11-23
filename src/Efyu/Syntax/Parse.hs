@@ -1,7 +1,7 @@
 module Efyu.Syntax.Parse where
 
 import Data.Void (Void)
-import Efyu.Syntax.Block (moduleP)
+import Efyu.Syntax.Module (moduleP)
 import Efyu.Types
 import qualified Text.Megaparsec as MP
 import Text.Megaparsec.Error (ParseErrorBundle)

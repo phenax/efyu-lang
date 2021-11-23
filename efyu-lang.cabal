@@ -21,8 +21,8 @@ library
       Efyu.Codegen.Js.Types
       Efyu.Codegen.Utils
       Efyu.Errors
-      Efyu.Syntax.Block
       Efyu.Syntax.Expression
+      Efyu.Syntax.Module
       Efyu.Syntax.Parse
       Efyu.Syntax.TypeAnnotations
       Efyu.Syntax.Utils
@@ -65,8 +65,8 @@ executable efyu
       Efyu.Codegen.Js.Types
       Efyu.Codegen.Utils
       Efyu.Errors
-      Efyu.Syntax.Block
       Efyu.Syntax.Expression
+      Efyu.Syntax.Module
       Efyu.Syntax.Parse
       Efyu.Syntax.TypeAnnotations
       Efyu.Syntax.Utils
@@ -118,8 +118,8 @@ test-suite efyu-test
       Efyu.Codegen.Js.Types
       Efyu.Codegen.Utils
       Efyu.Errors
-      Efyu.Syntax.Block
       Efyu.Syntax.Expression
+      Efyu.Syntax.Module
       Efyu.Syntax.Parse
       Efyu.Syntax.TypeAnnotations
       Efyu.Syntax.Utils
